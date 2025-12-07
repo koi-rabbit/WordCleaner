@@ -131,6 +131,10 @@ def add_heading_numbers(doc):
             level = int(paragraph.style.name.split(' ')[1]) - 1
 
             # 清洗原文档中的序号
+            number_pattern = re.compile(
+                r'(?:[\d一二三四五六七八九十零]{1,3}(?:(?:[\.、]\s*)|(?:\s*[）)]))?)+\s*',
+                re.UNICODE
+            )
             paragraph.text = number_pattern.sub('', paragraph.text).strip()
 
             # 更新序号
@@ -225,6 +229,7 @@ if f and st.button("开始排版"):
         out = process_doc(f.read())
     st.download_button("下载已排版文件", data=out,
                    file_name=f"{f.name.replace('.docx', '')}_已排版.docx")
+
 
 
 
