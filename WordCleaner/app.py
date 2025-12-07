@@ -206,10 +206,14 @@ def process_doc(uploaded_bytes):
     return buffer
 
 # ---------------- Streamlit 界面 ----------------
-st.title("Word 自动排版")
-f = st.file_uploader("上传docx", type="docx")
 if f and st.button("开始排版"):
     with st.spinner("处理中…"):
         out = process_doc(f.read())
-    st.download_button("下载已排版文件", data=out,
-                       file_name=f"{f.name.stem}_已排版.docx")
+    base = f.name.replace(".docx", "")
+    st.download_button(
+        label="📥 下载已排版文件",
+        data=out,
+        file_name=f"{base}_已排版.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
