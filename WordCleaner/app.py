@@ -28,7 +28,7 @@ bdy_font_size = Pt(10.5)  # 字号
 bdy_space_before = Pt(6)  # 段前行距
 bdy_space_after = Pt(6)  # 段后行距
 bdy_line_spacing = 1.0  #行距
-bdy_first_line_indent = Inches(0.5)  # 首行缩进
+bdy_first_line_indent = Pt(2)  # 首行缩进
 
 # 表格格式
 tbl_cz_font_name = "宋体"  # 中文字体
@@ -36,6 +36,7 @@ tbl_font_name = "Times New Roman"  # 英文字体
 tbl_font_size = Pt(10.5)  # 表格字号
 tbl_space_before = Pt(6)  # 表格段前行距
 tbl_space_after = Pt(6)  # 表格段后行距
+tbl_line_spacing = 1.0  #行距
 tbl_width = Inches(6)
 
 def get_outline_level_from_xml(p):
@@ -189,7 +190,7 @@ def modify_document_format(doc):
                     # 修改段前段后行距
                     paragraph.paragraph_format.space_before = tbl_space_before
                     paragraph.paragraph_format.space_after = tbl_space_after
-
+                    paragraph.paragraph_format.line_spacing = tbl_line_spacing
 
 def process_doc(uploaded_bytes):
     doc = Document(BytesIO(uploaded_bytes))
@@ -213,6 +214,7 @@ if f and st.button("开始排版"):
         out = process_doc(f.read())
     st.download_button("下载已排版文件", data=out,
                    file_name=f"{f.name.replace('.docx', '')}_已排版.docx")
+
 
 
 
