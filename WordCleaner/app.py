@@ -96,7 +96,7 @@ def circled_num(n: int) -> str:
 import re
 from docx.shared import Cm
 
-# 1. 清“手动文本”序号（扩大版）
+# 清“手动文本”序号（扩大版）
 raw_num_re = re.compile(
     r'(?:^[①-⑳]\s*|^[一二三四五六七八九十零]{1,3}[\.、]?\s*|'
     r'^\d{1,2}[\.\-\—]\s*|^[（(]?\s*\d{1,2}[）)]\s*)+', re.UNICODE)
@@ -105,24 +105,24 @@ def strip_manual_number(p):
     """把段落最前面各种手写序号削掉"""
     p.text = raw_num_re.sub('', p.text).strip()
 
-def strip_list_field(p):
-    """删掉 Word 多级列表字段（numPr）"""
-    pPr = p._p.get_or_add_pPr()
-    numPr = pPr.find(qn('w:numPr'))
-    if numPr is not None:
-        pPr.remove(numPr)
+def atomic_strip(p):
+    """先拼出纯文本，再清全部 Run，最后写回去"""
+    raw   = p.text                          # 当前可见文本
+    clean = raw_num_re.sub('', raw).strip()
+    # 清空所有 Run
+    for r in p._p.xpath('.//w:r'):
+        p._p.remove(r)
+    # 加一个全新 Run
+    p.add_run(clean)
 
 def remove_all_numbers(doc):
-    """遍历全文档，文本+字段双杀"""
     for p in doc.paragraphs:
-        strip_manual_number(p)   # ① 清文本
-        strip_list_field(p)      # ② 清字段
+        atomic_strip(p)
     for tbl in doc.tables:
         for row in tbl.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    strip_manual_number(p)
-                    strip_list_field(p)
+                    atomic_strip(p)
                     
 # 添加标题序号并清洗原有序
 def add_heading_numbers(doc):
@@ -252,6 +252,7 @@ if f and st.button("开始排版"):
         out = process_doc(f.read())
     st.download_button("下载已排版文件", data=out,
                    file_name=f"{f.name.replace('.docx', '')}_已排版.docx")
+
 
 
 
