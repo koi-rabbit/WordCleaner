@@ -104,9 +104,14 @@ from docx.shared import Cm
 # 添加标题序号
 def add_heading_numbers(doc):
     
-    raw_num_re = re.compile(
-        r'(?:^[①-⑳]\s*|^[一二三四五六七八九十零]{1,3}[\.、]?\s*|'
-        r'^\d{1,2}[\.\-\—]\s*|^[（(]?\s*\d{1,2}[）)]\s*)+', re.UNICODE)
+    number_pattern = re.compile(
+        r'^[（(]?'                                      # 可选左括号（全角/半角）
+        r'[\d一二三四五六七八九十零]{1,3}'             # 数字或中文数字
+        r'[\.、）)]?'                                   # 可选点号或右括号
+        r'(\s+[（(]?\s*[\d一二三四五六七八九十零]{1,3}[\.、）)]?)*'  # 同类碎片可再出现
+        r'\s*',                                        # 尾部空格
+        re.UNICODE
+    )
     paragraph.text = number_pattern.sub('', paragraph.text).strip()
     
     # 初始化标题序号
@@ -239,6 +244,7 @@ if f and st.button("开始排版"):
         out = process_doc(f.read())
     st.download_button("下载已排版文件", data=out,
                    file_name=f"{f.name.replace('.docx', '')}_已排版.docx")
+
 
 
 
