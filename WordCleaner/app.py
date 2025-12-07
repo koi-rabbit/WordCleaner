@@ -232,7 +232,6 @@ def modify_document_format(doc):
                     paragraph.paragraph_format.space_before = tbl_space_before
                     paragraph.paragraph_format.space_after = tbl_space_after
                     paragraph.paragraph_format.line_spacing = tbl_line_spacing
-                    paragraph.paragraph_format.first_line_indent = tbl_first_line_indent
 
 def process_doc(uploaded_bytes):
     doc = Document(BytesIO(uploaded_bytes))
@@ -257,6 +256,7 @@ if f and st.button("开始排版"):
         out = process_doc(f.read())
     st.download_button("下载已排版文件", data=out,
                    file_name=f"{f.name.replace('.docx', '')}_已排版.docx")
+
 
 
 
