@@ -9,12 +9,12 @@ from docx.oxml.ns import qn
 
 # 标题样式
 style_rules = {
-    1: {'style_name': 'Heading 1', 'font_name': 'Arial','cz_font_name': '楷体', 'font_size': 10, 'bold': True, 'space_before': 12, 'space_after': 12, 'line_spacing': 1.5, 'first_line_indent': 18},
-    2: {'style_name': 'Heading 2', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 14, 'bold': True, 'space_before': 10, 'space_after': 10, 'line_spacing': 1.5, 'first_line_indent': 18},
-    3: {'style_name': 'Heading 3', 'font_name': 'Arial','cz_font_name': '宋体','font_size': 12, 'bold': False, 'space_before': 8, 'space_after': 8, 'line_spacing': 1.5, 'first_line_indent': 0},
-    4: {'style_name': 'Heading 4', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 11, 'bold': False, 'space_before': 6, 'space_after': 6, 'line_spacing': 1.5, 'first_line_indent': 0},
-    5: {'style_name': 'Heading 5', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 10, 'bold': False, 'space_before': 4, 'space_after': 4, 'line_spacing': 1.5, 'first_line_indent': 0},
-    6: {'style_name': 'Heading 6', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 9, 'bold': False, 'space_before': 2, 'space_after': 2, 'line_spacing': 1.5, 'first_line_indent': 0},
+    1: {'style_name': 'Heading 1', 'font_name': 'Arial','cz_font_name': '黑体', 'font_size': 14, 'bold': True, 'space_before': 12, 'space_after': 12, 'line_spacing': 1.5, 'first_line_indent': 0},
+    2: {'style_name': 'Heading 2', 'font_name': 'Arial','cz_font_name': '黑体', 'font_size': 12, 'bold': True, 'space_before': 12, 'space_after': 12, 'line_spacing': 1.5, 'first_line_indent': 2},
+    3: {'style_name': 'Heading 3', 'font_name': 'Times New Roman','cz_font_name': '宋体','font_size': 10.5, 'bold': False, 'space_before': 8, 'space_after': 8, 'line_spacing': 1.0, 'first_line_indent': 4},
+    4: {'style_name': 'Heading 4', 'font_name': 'Times New Roman','cz_font_name': '宋体', 'font_size': 10.5, 'bold': False, 'space_before': 8, 'space_after': 8, 'line_spacing': 1.0, 'first_line_indent': 0},
+    5: {'style_name': 'Heading 5', 'font_name': 'Times New Roman','cz_font_name': '宋体', 'font_size': 10.5, 'bold': False, 'space_before': 6, 'space_after': 6, 'line_spacing': 1.0, 'first_line_indent': 0},
+    6: {'style_name': 'Heading 6', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 9, 'bold': False, 'space_before': 2, 'space_after': 2, 'line_spacing': 1.0, 'first_line_indent': 0},
     7: {'style_name': 'Heading 7', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 8, 'bold': False, 'space_before': 0, 'space_after': 0, 'line_spacing': 1.0, 'first_line_indent': 18},
     8: {'style_name': 'Heading 8', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 7, 'bold': False, 'space_before': 0, 'space_after': 0, 'line_spacing': 1.0, 'first_line_indent': 18},
     9: {'style_name': 'Heading 9', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 6, 'bold': False, 'space_before': 0, 'space_after': 0, 'line_spacing': 1.0, 'first_line_indent': 18},
@@ -24,16 +24,16 @@ style_rules = {
 # 正文格式
 bdy_cz_font_name = "宋体"  # 字体
 bdy_font_name = "Times New Roman"
-bdy_font_size = Pt(12)  # 字号
-bdy_space_before = Pt(12)  # 段前行距
-bdy_space_after = Pt(12)  # 段后行距
+bdy_font_size = Pt(10.5)  # 字号
+bdy_space_before = Pt(6)  # 段前行距
+bdy_space_after = Pt(6)  # 段后行距
 bdy_line_spacing = 1.0  #行距
 bdy_first_line_indent = Inches(0.5)  # 首行缩进
 
 # 表格格式
 tbl_cz_font_name = "宋体"  # 中文字体
 tbl_font_name = "Times New Roman"  # 英文字体
-tbl_font_size = Pt(10)  # 表格字号
+tbl_font_size = Pt(10.5)  # 表格字号
 tbl_space_before = Pt(6)  # 表格段前行距
 tbl_space_after = Pt(6)  # 表格段后行距
 tbl_width = Inches(6)
@@ -213,6 +213,7 @@ if f and st.button("开始排版"):
         out = process_doc(f.read())
     st.download_button("下载已排版文件", data=out,
                    file_name=f"{f.name.replace('.docx', '')}_已排版.docx")
+
 
 
 
