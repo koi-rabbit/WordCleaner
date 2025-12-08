@@ -42,8 +42,8 @@ with st.sidebar:
         st.session_state["bdy_cz_font_name"] = st.text_input("中文字体", st.session_state["bdy_cz_font_name"])
         st.session_state["bdy_font_name"] = st.text_input("英文字体", st.session_state["bdy_font_name"])
         st.session_state["bdy_font_size"] = st.number_input("字号(pt)", 5.0, 30.0, st.session_state["bdy_font_size"], 0.5)
-        st.session_state["bdy_space_before"] = st.number_input("段前行距(pt)", 0, 50.0, st.session_state["bdy_space_before"])
-        st.session_state["bdy_space_after"] = st.number_input("段后行距(pt)", 0, 50.0, st.session_state["bdy_space_after"])
+        st.session_state["bdy_space_before"] = st.number_input("段前行距(pt)", 0.0, 50.0, st.session_state["bdy_space_before"])
+        st.session_state["bdy_space_after"] = st.number_input("段后行距(pt)", 0.0, 50.0, st.session_state["bdy_space_after"])
         st.session_state["bdy_line_spacing"] = st.number_input("行距(倍)", 0.5, 3.0, st.session_state["bdy_line_spacing"], 0.1)
         st.session_state["bdy_first_line_indent"] = st.number_input("首行缩进(cm)", 0.0, 5.0, st.session_state["bdy_first_line_indent"], 0.05)
 
@@ -51,8 +51,8 @@ with st.sidebar:
         st.session_state["tbl_cz_font_name"] = st.text_input("表格中文字体", st.session_state["tbl_cz_font_name"])
         st.session_state["tbl_font_name"] = st.text_input("表格英文字体", st.session_state["tbl_font_name"])
         st.session_state["tbl_font_size"] = st.number_input("表格字号(pt)", 5.0, 30.0, st.session_state["tbl_font_size"], 0.5)
-        st.session_state["tbl_space_before"] = st.number_input("表格段前行距(pt)", 0, 50.0, st.session_state["tbl_space_before"])
-        st.session_state["tbl_space_after"] = st.number_input("表格段后行距(pt)", 0, 50.0, st.session_state["tbl_space_after"])
+        st.session_state["tbl_space_before"] = st.number_input("表格段前行距(pt)", 0.0, 50.0, st.session_state["tbl_space_before"])
+        st.session_state["tbl_space_after"] = st.number_input("表格段后行距(pt)", 0.0, 50.0, st.session_state["tbl_space_after"])
         st.session_state["tbl_line_spacing"] = st.number_input("表格行距(倍)", 0.5, 3.0, st.session_state["tbl_line_spacing"], 0.1)
         st.session_state["tbl_width"] = st.number_input("表格宽度(inches)", 1.0, 10.0, st.session_state["tbl_width"], 0.1)
 
@@ -323,6 +323,7 @@ if files and st.button("开始批量排版"):
                 file_name=f"{f.name.replace('.docx', '')}_已排版.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+
 
 
 
