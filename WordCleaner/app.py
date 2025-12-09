@@ -192,12 +192,13 @@ def number_to_chinese(number):
 def add_heading_numbers(doc):
     
     number_pattern = re.compile(
-        r'^\s*'                                      # 前导空格
-        r'[（(]?'                                     # 可选左括号
-        r'[\d一二三四五六七八九十零]{1,3}'            # 数字
-        r'[\.、）)\s]'                                # 分隔符
-        r'(?:[（(]?\s*[\d一二三四五六七八九十零]{1,3}[\.、）)]\s*)*'  # 后续级
-        #  去掉 \s*$  —— 不要整行匹配
+        r'^\s*'                                  # 前导空格
+        r'[（(]?'                                # 可选左括号
+        r'[\d一二三四五六七八九十零]{1,3}'        # 首位数字
+        r'[\.、）)\s]'                            # 分隔符（含空格）
+        r'(?:[\d一二三四五六七八九十零]{1,3}'     # 后续数字
+        r'[\.、）)\s]'                            # 后续分隔符（含空格）
+        r')*'                                    # 重复任意次
         , re.UNICODE
     )
     
@@ -347,6 +348,7 @@ if files and st.button("开始批量排版"):
                 file_name=f"{f.name.replace('.docx', '')}_已排版.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+
 
 
 
