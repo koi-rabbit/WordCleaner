@@ -93,6 +93,57 @@ tbl_space_after = Pt(st.session_state["tbl_space_after"])  # 表格段后行距
 tbl_line_spacing = st.session_state["tbl_line_spacing"]  #行距
 tbl_width = Inches(st.session_state["tbl_width"])
 
+def get_outline_level_from_xml(p):
+    """
+    从段落的XML中提取大纲级别，并加1
+    """
+    xml = p._p.xml
+    m = re.search(r'<w:outlineLvl w:val="(\d)"/>', xml)
+    level = int(m.group(1)) if m else None
+    if level is not None:
+        level += 1  # 加1
+    return level
+
+def restructure_outline(doc):
+    # ---------- 1. 升级：XML 大纲 → Heading ----------
+    for p in doc.paragraphs:
+        zero_indent(p)
+        lvl = get_outline_level_from_xml(p)
+        if lvl and p.style.name == "Normal":
+            # Heading 1~9 才存在
+            heading_style = f"Heading {lvl}"
+            if heading_style in doc.styles:
+                p.style = doc.styles[heading_style]
+
+    # ---------- 2. 降级：空标题 ----------
+    headings_idx: List[int] = []
+    for idx, p in enumerate(doc.paragraphs):
+        if p.style.name.startswith("Heading"):
+            headings_idx.append(idx)
+            if not p.text.strip():          # 空
+                p.style = doc.styles["Normal"]
+
+    # ---------- 3. 降级：尾部无正文 ----------
+    # 从后往前扫，记录“后面有没有正文”
+    has_content = False
+    for idx in reversed(headings_idx):
+        p = doc.paragraphs[idx]
+        if p.style.name == "Normal":        # 已被空标题降级，跳过
+            continue
+        # 看后面有没有正文
+        for j in range(idx + 1, len(doc.paragraphs)):
+            q = doc.paragraphs[j]
+            if q.style.name.startswith("Heading"):
+                break
+            if q.text.strip():
+                has_content = True
+                break
+        if not has_content:                 # 直到文末都没正文
+            p.style = doc.styles["Normal"]
+        # 一旦后面出现正文，之后更靠前的标题都保留
+        else:
+            break
+            
 def zero_indent(p):
     pf = p.paragraph_format
     pf.left_indent       = Cm(0)
@@ -117,16 +168,7 @@ def kill_all_numbering(doc):
         for num_id in style_el.xpath('.//w:numId'):
             num_id.getparent().remove(num_id) 
             
-def get_outline_level_from_xml(p):
-    """
-    从段落的XML中提取大纲级别，并加1
-    """
-    xml = p._p.xml
-    m = re.search(r'<w:outlineLvl w:val="(\d)"/>', xml)
-    level = int(m.group(1)) if m else None
-    if level is not None:
-        level += 1  # 加1
-    return level
+
                
 def set_font(run, cz_font_name, font_name):
     """
@@ -289,11 +331,7 @@ def modify_document_format(doc):
 def process_doc(uploaded_bytes):
     doc = Document(BytesIO(uploaded_bytes))
     # 下面就是你原来的 main 逻辑里“处理”部分
-    for para in doc.paragraphs:
-        zero_indent(para)
-        lvl = get_outline_level_from_xml(para)
-        if lvl and para.style.name == "Normal":
-            para.style = doc.styles[f"Heading {lvl}"]
+    restructure_outline(doc)
     kill_all_numbering(doc)
     add_heading_numbers(doc)
     modify_document_format(doc)
@@ -323,6 +361,7 @@ if files and st.button("开始批量排版"):
                 file_name=f"{f.name.replace('.docx', '')}_已排版.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+
 
 
 
