@@ -237,6 +237,8 @@ def add_heading_numbers(doc):
         # 检查段落是否是标题
         if paragraph.style.name.startswith('Heading'):
             #清洗手写序号
+            if paragraph.text == "Ellipsis" or not paragraph.text.strip():
+                continue
             for p in doc.paragraphs:
                 p_pr = p._p.get_or_add_pPr()
                 num_pr = p_pr.find(qn('w:numPr'))
@@ -258,43 +260,45 @@ def add_heading_numbers(doc):
             paragraph.text = number_str + paragraph.text
 
 def modify_document_format(doc):
-    """
-    修改 Word 文档中正文和表格的格式。
+    skipped = set()
 
-    :param file_path: 输入的 Word 文档路径
-    :param output_path: 输出的 Word 文档路径，默认为 "modified.docx"
-    """
-    skipped = set()  # 收集被跳过的样式
     for p in doc.paragraphs:
         style_name = p.style.name
 
-        # 跳过不认识的样式
+        # 跳过空段落
+        if p.text == "Ellipsis" or not p.text.strip():
+            continue
+
         if style_name not in KNOWN_STYLES:
-            if not p.text.strip() or p.text == "Ellipsis":
-                continue
             skipped.add(style_name)
             continue
-            
-        # 遍历文档中的每个段落
+
         if style_name.startswith("Heading"):
-            ...  # 原 Heading 处理不动
+            for rule_lvl, rule in style_rules.items():
+                if rule['style_name'] == style_name:
+                    p.style.paragraph_format.space_before = Pt(rule['space_before'])
+                    p.style.paragraph_format.space_after = Pt(rule['space_after'])
+                    p.style.paragraph_format.line_spacing = rule['line_spacing']
+                    p.style.paragraph_format.first_line_indent = Cm(rule['first_line_indent'])
+                    for run in p.runs:
+                        set_font(run, rule['cz_font_name'], rule['font_name'])
+                        run.font.size = Pt(rule['font_size'])
+                        run.font.bold = rule['bold']
         else:
-            # 这里就是 Normal / List Paragraph
             p.paragraph_format.space_before = bdy_space_before
-            p.paragraph_format.space_after  = bdy_space_after
+            p.paragraph_format.space_after = bdy_space_after
             p.paragraph_format.line_spacing = bdy_line_spacing
             p.paragraph_format.first_line_indent = bdy_first_line_indent
             for run in p.runs:
                 set_font(run, bdy_cz_font_name, bdy_font_name)
                 run.font.size = bdy_font_size
 
-    # ----------- 修改表格 ----------
+    # 表格处理不变
     for tbl in doc.tables:
         tbl.width = tbl_width
         for row in tbl.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    # 表格里只动 Normal
                     if p.style.name != "Normal":
                         skipped.add(f"表格内：{p.style.name}")
                         continue
@@ -302,10 +306,9 @@ def modify_document_format(doc):
                         set_font(run, tbl_cz_font_name, tbl_font_name)
                         run.font.size = tbl_font_size
                     p.paragraph_format.space_before = tbl_space_before
-                    p.paragraph_format.space_after  = tbl_space_after
+                    p.paragraph_format.space_after = tbl_space_after
                     p.paragraph_format.line_spacing = tbl_line_spacing
 
-    # ---------------- 给用户反馈 ----------------
     if skipped:
         st.warning("以下样式未被处理（已跳过）：")
         st.text("\n".join(sorted(skipped)))
@@ -344,6 +347,7 @@ if files and st.button("开始批量排版"):
                 file_name=f"{f.name.replace('.docx', '')}_已排版.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+
 
 
 
