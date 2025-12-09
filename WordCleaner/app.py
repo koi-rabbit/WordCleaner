@@ -238,9 +238,9 @@ def add_heading_numbers(doc):
         if paragraph.style.name.startswith('Heading'):
             #清洗手写序号
             if paragraph.text == "Ellipsis" or not paragraph.text.strip():
-                continue
-            paragraph.text = number_pattern.sub('', p.text).lstrip()
+                continue            
             for p in doc.paragraphs:
+                p.text = number_pattern.sub('', p.text).lstrip()
                 p_pr = p._p.get_or_add_pPr()
                 num_pr = p_pr.find(qn('w:numPr'))
                 if num_pr is not None:
@@ -348,6 +348,7 @@ if files and st.button("开始批量排版"):
                 file_name=f"{f.name.replace('.docx', '')}_已排版.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+
 
 
 
