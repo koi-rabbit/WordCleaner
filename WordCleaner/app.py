@@ -193,12 +193,12 @@ def add_heading_numbers(doc):
     
     number_pattern = re.compile(
         r'^\s*'                                      # 前导空格
-        r'[（(]?'                                     # 可选左括号（全角/半角）
-        r'[\d一二三四五六七八九十零]{1,3}'            # 首位数字（阿拉伯或中文）
-        r'[\.、）)]'                                  # 必须跟一个点号/顿号/右括号（把“锚”做实）
-        r'(?:[（(]?\s*[\d一二三四五六七八九十零]{1,3}[\.、）)]\s*)*'  # 后面可再出现“数字+点/顿/括号”
-        r'\s*$',                                     # 尾部空格
-        re.UNICODE
+        r'[（(]?'                                     # 可选左括号
+        r'[\d一二三四五六七八九十零]{1,3}'            # 数字
+        r'[\.、）)]'                                  # 分隔符
+        r'(?:[（(]?\s*[\d一二三四五六七八九十零]{1,3}[\.、）)]\s*)*'  # 后续级
+        #  去掉 \s*$  —— 不要整行匹配
+        , re.UNICODE
     )
     
     # 初始化标题序号
@@ -240,7 +240,6 @@ def add_heading_numbers(doc):
             if paragraph.text == "Ellipsis" or not paragraph.text.strip():
                 continue            
             for p in doc.paragraphs:
-                p.text = number_pattern.sub('', p.text).lstrip()
                 p_pr = p._p.get_or_add_pPr()
                 num_pr = p_pr.find(qn('w:numPr'))
                 if num_pr is not None:
@@ -348,6 +347,7 @@ if files and st.button("开始批量排版"):
                 file_name=f"{f.name.replace('.docx', '')}_已排版.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+
 
 
 
