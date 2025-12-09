@@ -266,13 +266,11 @@ def modify_document_format(doc):
     """
     skipped = set()  # 收集被跳过的样式
     for p in doc.paragraphs:
-        # 1. 跳过空幽灵段落
-        if p.text == "Ellipsis":
-            continue
         style_name = p.style.name
+
+        # 跳过不认识的样式
         if style_name not in KNOWN_STYLES:
-            # 2. 再过滤一次真正的空段落
-            if not p.text.strip():
+            if not p.text.strip() or p.text == "Ellipsis":
                 continue
             skipped.add(style_name)
             continue
@@ -346,6 +344,7 @@ if files and st.button("开始批量排版"):
                 file_name=f"{f.name.replace('.docx', '')}_已排版.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+
 
 
 
