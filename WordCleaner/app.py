@@ -52,6 +52,8 @@ if 'config' not in st.session_state:
     st.session_state.config = DEFAULT_CONFIG.copy()
 if 'processed' not in st.session_state:
     st.session_state.processed = False
+if 'current_tab' not in st.session_state:
+    st.session_state.current_tab = "📝 标题"
 
 # 样式
 st.markdown("""
@@ -61,30 +63,13 @@ st.markdown("""
         font-weight: bold;
         color: #1E3A8A;
         text-align: center;
-        margin-bottom: 2rem;
-        padding-top: 1rem;
-    }
-    .section-header {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #374151;
-        margin: 1.5rem 0 1rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .section-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 1px solid #E5E7EB;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+        padding-top: 0.5rem;
     }
     .upload-box {
         border: 2px dashed #4F46E5;
         border-radius: 10px;
-        padding: 3rem 2rem;
+        padding: 2.5rem 2rem;
         text-align: center;
         background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
         margin: 1rem 0;
@@ -125,16 +110,13 @@ st.markdown("""
         border-radius: 10px;
         margin: 1rem 0;
     }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 1rem;
-    }
-    .stTabs [data-baseweb="tab"] {
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px 8px 0 0;
+    .config-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        border: 1px solid #E5E7EB;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     .level-setting {
         background: #F9FAFB;
@@ -142,6 +124,41 @@ st.markdown("""
         border-radius: 8px;
         margin-bottom: 0.5rem;
         border-left: 4px solid #4F46E5;
+    }
+    .help-section {
+        background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        border-left: 4px solid #6B7280;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 1rem;
+        padding: 0.5rem 0;
+    }
+    .stTabs [data-baseweb="tab"] {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        background: #F9FAFB;
+        border: 1px solid #E5E7EB;
+        transition: all 0.3s ease;
+    }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #4F46E5;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background: #F3F4F6;
+        transform: translateY(-2px);
+    }
+    .stTabs [aria-selected="true"]:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4090 100%) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -297,219 +314,278 @@ def process_document(uploaded_file, config):
         st.error(f"处理失败: {str(e)}")
         return None
 
-def config_sidebar():
-    """配置侧边栏"""
-    with st.sidebar:
-        st.markdown('<div class="section-header">⚙️ 格式设置</div>', unsafe_allow_html=True)
+def config_main():
+    """主配置区域"""
+    # 使用tabs组织三大类设置
+    tab1, tab2, tab3 = st.tabs(["📝 标题设置", "📄 正文设置", "📊 表格设置"])
+    
+    with tab1:
+        st.markdown('<div class="config-section">', unsafe_allow_html=True)
         
-        # 使用tabs组织三大类设置
-        tab1, tab2, tab3 = st.tabs(["📝 标题", "📄 正文", "📊 表格"])
-        
-        with tab1:
-            st.markdown('<div class="section-card">', unsafe_allow_html=True)
-            
-            # 全局标题设置
-            st.markdown("**全局标题设置**")
-            st.session_state.config["标题"]["应用序号"] = st.checkbox(
-                "启用标题自动编号",
+        # 全局标题设置
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.markdown("**启用标题自动编号**")
+            st.session_state.config["标题"]["应用序号"] = st.toggle(
+                "",
                 value=st.session_state.config["标题"]["应用序号"],
+                key="global_numbering_toggle",
                 help="是否给标题添加自动序号"
             )
+        
+        if st.session_state.config["标题"]["应用序号"]:
+            st.divider()
+            st.markdown("**各级标题设置**")
             
-            if st.session_state.config["标题"]["应用序号"]:
-                st.divider()
-                st.markdown("**各级标题设置**")
-                
-                # 序号格式选项
-                format_options = {
-                    "chinese": "中文数字（一、二、三）",
-                    "chinese_bracket": "中文数字加括号（（一）（二）（三））",
-                    "arabic_dot": "阿拉伯数字加点（1.2.3.）",
-                    "arabic_bracket": "阿拉伯数字加括号（（1）（2）（3））",
-                    "roman_lower": "小写罗马数字（i.ii.iii.）",
-                    "roman_upper": "大写罗马数字（I.II.III.）",
-                    "alphabet_lower": "小写字母（a.b.c.）",
-                    "alphabet_upper": "大写字母（A.B.C.）"
-                }
-                
-                # 显示1-9级标题设置
-                for level in range(1, 10):
+            # 序号格式选项
+            format_options = {
+                "chinese": "中文数字（一、二、三）",
+                "chinese_bracket": "中文数字加括号（（一）（二）（三））",
+                "arabic_dot": "阿拉伯数字加点（1.2.3.）",
+                "arabic_bracket": "阿拉伯数字加括号（（1）（2）（3））",
+                "roman_lower": "小写罗马数字（i.ii.iii.）",
+                "roman_upper": "大写罗马数字（I.II.III.）",
+                "alphabet_lower": "小写字母（a.b.c.）",
+                "alphabet_upper": "大写字母（A.B.C.）"
+            }
+            
+            # 使用3列布局显示1-9级标题设置
+            cols = st.columns(3)
+            for level in range(1, 10):
+                with cols[(level-1) % 3]:
                     st.markdown(f'<div class="level-setting">', unsafe_allow_html=True)
                     st.markdown(f"**第{level}级标题**")
                     
-                    col1, col2 = st.columns([1, 2])
-                    with col1:
-                        # 是否应用序号
-                        apply_key = f"标题_{level}_应用"
-                        if apply_key not in st.session_state:
-                            st.session_state[apply_key] = st.session_state.config["标题"]["各级标题设置"][level]["应用序号"]
-                        
-                        apply = st.checkbox(
-                            "应用序号",
-                            value=st.session_state.config["标题"]["各级标题设置"][level]["应用序号"],
-                            key=f"apply_{level}"
-                        )
-                        st.session_state.config["标题"]["各级标题设置"][level]["应用序号"] = apply
+                    # 是否应用序号
+                    apply = st.checkbox(
+                        "应用序号",
+                        value=st.session_state.config["标题"]["各级标题设置"][level]["应用序号"],
+                        key=f"apply_{level}"
+                    )
+                    st.session_state.config["标题"]["各级标题设置"][level]["应用序号"] = apply
                     
-                    with col2:
-                        if apply:
-                            # 序号格式选择
-                            current_format = st.session_state.config["标题"]["各级标题设置"][level]["格式"]
-                            selected = st.selectbox(
-                                "格式",
-                                options=list(format_options.keys()),
-                                format_func=lambda x: format_options[x],
-                                index=list(format_options.keys()).index(current_format) if current_format in format_options else 2,
-                                key=f"format_{level}",
-                                label_visibility="collapsed"
-                            )
-                            st.session_state.config["标题"]["各级标题设置"][level]["格式"] = selected
+                    if apply:
+                        # 序号格式选择
+                        current_format = st.session_state.config["标题"]["各级标题设置"][level]["格式"]
+                        selected = st.selectbox(
+                            "序号格式",
+                            options=list(format_options.keys()),
+                            format_func=lambda x: format_options[x],
+                            index=list(format_options.keys()).index(current_format) if current_format in format_options else 2,
+                            key=f"format_{level}"
+                        )
+                        st.session_state.config["标题"]["各级标题设置"][level]["格式"] = selected
                     
                     st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
         
-        with tab2:
-            st.markdown('<div class="section-card">', unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**字体设置**")
-                st.session_state.config["正文"]["中文字体"] = st.text_input(
-                    "中文字体",
-                    value=st.session_state.config["正文"]["中文字体"],
-                    key="body_cz_font"
-                )
-                st.session_state.config["正文"]["英文字体"] = st.text_input(
-                    "英文字体",
-                    value=st.session_state.config["正文"]["英文字体"],
-                    key="body_en_font"
-                )
-            
-            with col2:
-                st.markdown("**字号与缩进**")
-                st.session_state.config["正文"]["字号"] = st.number_input(
-                    "字号 (pt)",
-                    min_value=6,
-                    max_value=72,
-                    value=int(st.session_state.config["正文"]["字号"]),
-                    key="body_font_size"
-                )
-                st.session_state.config["正文"]["首行缩进"] = st.number_input(
-                    "首行缩进 (英寸)",
-                    min_value=0.0,
-                    max_value=2.0,
-                    value=float(st.session_state.config["正文"]["首行缩进"]),
-                    step=0.1,
-                    key="body_indent"
-                )
-            
-            st.divider()
-            
-            col3, col4 = st.columns(2)
-            with col3:
-                st.markdown("**间距设置**")
-                st.session_state.config["正文"]["段前间距"] = st.number_input(
-                    "段前间距 (pt)",
-                    min_value=0,
-                    max_value=100,
-                    value=int(st.session_state.config["正文"]["段前间距"]),
-                    key="body_before"
-                )
-                st.session_state.config["正文"]["段后间距"] = st.number_input(
-                    "段后间距 (pt)",
-                    min_value=0,
-                    max_value=100,
-                    value=int(st.session_state.config["正文"]["段后间距"]),
-                    key="body_after"
-                )
-            
-            with col4:
-                st.markdown("**行距设置**")
-                st.session_state.config["正文"]["行距"] = st.number_input(
-                    "行距倍数",
-                    min_value=1.0,
-                    max_value=3.0,
-                    value=float(st.session_state.config["正文"]["行距"]),
-                    step=0.1,
-                    key="body_line"
-                )
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with tab2:
+        st.markdown('<div class="config-section">', unsafe_allow_html=True)
         
-        with tab3:
-            st.markdown('<div class="section-card">', unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**字体设置**")
-                st.session_state.config["表格"]["中文字体"] = st.text_input(
-                    "表格中文字体",
-                    value=st.session_state.config["表格"]["中文字体"],
-                    key="table_cz_font"
-                )
-                st.session_state.config["表格"]["英文字体"] = st.text_input(
-                    "表格英文字体",
-                    value=st.session_state.config["表格"]["英文字体"],
-                    key="table_en_font"
-                )
-            
-            with col2:
-                st.markdown("**字号与宽度**")
-                st.session_state.config["表格"]["字号"] = st.number_input(
-                    "表格字号 (pt)",
-                    min_value=6,
-                    max_value=72,
-                    value=int(st.session_state.config["表格"]["字号"]),
-                    key="table_font_size"
-                )
-                st.session_state.config["表格"]["表格宽度"] = st.number_input(
-                    "表格宽度 (英寸)",
-                    min_value=1,
-                    max_value=20,
-                    value=int(st.session_state.config["表格"]["表格宽度"]),
-                    key="table_width"
-                )
-            
-            st.divider()
-            
-            st.markdown("**间距设置**")
-            col3, col4 = st.columns(2)
-            with col3:
-                st.session_state.config["表格"]["段前间距"] = st.number_input(
-                    "表格段前间距 (pt)",
-                    min_value=0,
-                    max_value=100,
-                    value=int(st.session_state.config["表格"]["段前间距"]),
-                    key="table_before"
-                )
-            
-            with col4:
-                st.session_state.config["表格"]["段后间距"] = st.number_input(
-                    "表格段后间距 (pt)",
-                    min_value=0,
-                    max_value=100,
-                    value=int(st.session_state.config["表格"]["段后间距"]),
-                    key="table_after"
-                )
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+        # 字体设置
+        st.markdown("**字体设置**")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.session_state.config["正文"]["中文字体"] = st.text_input(
+                "中文字体",
+                value=st.session_state.config["正文"]["中文字体"],
+                key="body_cz_font"
+            )
+        with col2:
+            st.session_state.config["正文"]["英文字体"] = st.text_input(
+                "英文字体",
+                value=st.session_state.config["正文"]["英文字体"],
+                key="body_en_font"
+            )
+        
+        st.divider()
+        
+        # 字号与行距
+        st.markdown("**字号与行距**")
+        col3, col4 = st.columns(2)
+        with col3:
+            st.session_state.config["正文"]["字号"] = st.number_input(
+                "字号 (pt)",
+                min_value=6,
+                max_value=72,
+                value=int(st.session_state.config["正文"]["字号"]),
+                key="body_font_size"
+            )
+        with col4:
+            st.session_state.config["正文"]["行距"] = st.number_input(
+                "行距倍数",
+                min_value=1.0,
+                max_value=3.0,
+                value=float(st.session_state.config["正文"]["行距"]),
+                step=0.1,
+                key="body_line_spacing"
+            )
+        
+        st.divider()
+        
+        # 段落格式
+        st.markdown("**段落格式**")
+        col5, col6, col7 = st.columns(3)
+        with col5:
+            st.session_state.config["正文"]["段前间距"] = st.number_input(
+                "段前间距 (pt)",
+                min_value=0,
+                max_value=100,
+                value=int(st.session_state.config["正文"]["段前间距"]),
+                key="body_before"
+            )
+        with col6:
+            st.session_state.config["正文"]["段后间距"] = st.number_input(
+                "段后间距 (pt)",
+                min_value=0,
+                max_value=100,
+                value=int(st.session_state.config["正文"]["段后间距"]),
+                key="body_after"
+            )
+        with col7:
+            st.session_state.config["正文"]["首行缩进"] = st.number_input(
+                "首行缩进 (英寸)",
+                min_value=0.0,
+                max_value=2.0,
+                value=float(st.session_state.config["正文"]["首行缩进"]),
+                step=0.1,
+                key="body_indent"
+            )
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with tab3:
+        st.markdown('<div class="config-section">', unsafe_allow_html=True)
+        
+        # 字体设置
+        st.markdown("**字体设置**")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.session_state.config["表格"]["中文字体"] = st.text_input(
+                "中文字体",
+                value=st.session_state.config["表格"]["中文字体"],
+                key="table_cz_font"
+            )
+        with col2:
+            st.session_state.config["表格"]["英文字体"] = st.text_input(
+                "英文字体",
+                value=st.session_state.config["表格"]["英文字体"],
+                key="table_en_font"
+            )
+        
+        st.divider()
+        
+        # 字号与宽度
+        st.markdown("**字号与宽度**")
+        col3, col4 = st.columns(2)
+        with col3:
+            st.session_state.config["表格"]["字号"] = st.number_input(
+                "表格字号 (pt)",
+                min_value=6,
+                max_value=72,
+                value=int(st.session_state.config["表格"]["字号"]),
+                key="table_font_size"
+            )
+        with col4:
+            st.session_state.config["表格"]["表格宽度"] = st.number_input(
+                "表格宽度 (英寸)",
+                min_value=1,
+                max_value=20,
+                value=int(st.session_state.config["表格"]["表格宽度"]),
+                key="table_width"
+            )
+        
+        st.divider()
+        
+        # 间距设置
+        st.markdown("**间距设置**")
+        col5, col6 = st.columns(2)
+        with col5:
+            st.session_state.config["表格"]["段前间距"] = st.number_input(
+                "表格段前间距 (pt)",
+                min_value=0,
+                max_value=100,
+                value=int(st.session_state.config["表格"]["段前间距"]),
+                key="table_before"
+            )
+        with col6:
+            st.session_state.config["表格"]["段后间距"] = st.number_input(
+                "表格段后间距 (pt)",
+                min_value=0,
+                max_value=100,
+                value=int(st.session_state.config["表格"]["段后间距"]),
+                key="table_after"
+            )
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+
+def help_sidebar():
+    """侧边栏帮助信息"""
+    with st.sidebar:
+        st.markdown("### 📖 使用说明")
+        
+        st.markdown('<div class="help-section">', unsafe_allow_html=True)
+        st.markdown("**📤 上传文档**")
+        st.markdown("""
+        1. 点击上传区域选择.docx文件
+        2. 支持批量处理（可逐个上传）
+        3. 文件大小建议不超过50MB
+        """)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="help-section">', unsafe_allow_html=True)
+        st.markdown("**⚙️ 配置说明**")
+        st.markdown("""
+        - **标题设置**：控制各级标题的自动编号
+        - **正文设置**：调整文档正文的格式样式
+        - **表格设置**：设置表格的字体和间距
+        """)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="help-section">', unsafe_allow_html=True)
+        st.markdown("**🚀 处理流程**")
+        st.markdown("""
+        1. 上传文档后设置参数
+        2. 点击"开始处理文档"
+        3. 下载处理后的文件
+        4. 可重新处理或处理新文件
+        """)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.divider()
+        
+        st.markdown("### 🔧 功能特点")
+        st.markdown("""
+        - ✅ **自动编号**：支持9级标题自动编号
+        - ✅ **多种格式**：中文、数字、字母、罗马数字
+        - ✅ **灵活控制**：各级标题可单独设置
+        - ✅ **批量处理**：可连续处理多个文档
+        - ✅ **格式统一**：确保文档格式一致性
+        """)
+        
+        st.divider()
+        
+        # 重置按钮
+        if st.button("🔄 重置所有设置", use_container_width=True):
+            st.session_state.config = DEFAULT_CONFIG.copy()
+            st.success("设置已重置！")
+            st.rerun()
 
 def main():
     # 主标题
     st.markdown('<h1 class="main-header">📝 Word文档格式化工具</h1>', unsafe_allow_html=True)
     
-    # 创建两列布局：左侧上传/处理，右侧配置
-    col1, col2 = st.columns([1.2, 0.8])
+    # 创建两列布局：左侧上传/处理，右侧帮助信息
+    col1, col2 = st.columns([3, 1])
     
     with col1:
         # 上传区域
-        st.markdown('<div class="section-header">📤 上传文档</div>', unsafe_allow_html=True)
-        
+        st.markdown("### 📤 上传文档")
         uploaded_file = st.file_uploader(
-            "选择 .docx 文件",
+            "",
             type=['docx'],
-            help="上传需要格式化的Word文档",
+            help="选择需要格式化的Word文档",
             label_visibility="collapsed"
         )
         
@@ -525,11 +601,14 @@ def main():
             </div>
             ''', unsafe_allow_html=True)
         
-        # 处理按钮区域
-        st.markdown('<div style="margin-top: 2rem;"></div>', unsafe_allow_html=True)
+        # 参数设置区域
+        st.markdown("### ⚙️ 参数设置")
+        config_main()
         
+        # 处理按钮区域
+        st.markdown("---")
         if uploaded_file:
-            if st.button("🚀 开始处理文档", type="primary", use_container_width=True):
+            if st.button("🚀 开始处理文档", type="primary", use_container_width=True, key="process_button"):
                 with st.spinner("正在处理文档，请稍候..."):
                     processed_doc = process_document(uploaded_file, st.session_state.config)
                     
@@ -541,10 +620,10 @@ def main():
         
         # 结果展示区域
         if st.session_state.processed:
-            st.markdown('<div class="section-header">📥 处理结果</div>', unsafe_allow_html=True)
+            st.markdown("### 📥 处理结果")
             st.markdown('<div class="success-box">✅ 文档处理完成！</div>', unsafe_allow_html=True)
             
-            col_a, col_b, col_c = st.columns([2, 1, 1])
+            col_a, col_b = st.columns([2, 1])
             with col_a:
                 st.download_button(
                     label=f"📥 下载 {st.session_state.output_filename}",
@@ -553,49 +632,14 @@ def main():
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     use_container_width=True
                 )
-            
             with col_b:
                 if st.button("🔄 重新处理", use_container_width=True):
                     st.session_state.processed = False
                     st.rerun()
-            
-            with col_c:
-                if st.button("📄 处理新文件", use_container_width=True):
-                    st.session_state.processed = False
-                    st.rerun()
     
     with col2:
-        # 配置区域
-        config_sidebar()
-    
-    # 使用说明（底部）
-    st.markdown("---")
-    with st.expander("📖 使用说明", expanded=True):
-        col_a, col_b, col_c = st.columns(3)
-        
-        with col_a:
-            st.markdown("### 📝 标题设置")
-            st.markdown("""
-            - **启用/禁用**：控制是否添加自动编号
-            - **各级设置**：为每级标题单独设置
-            - **序号格式**：支持中文、数字、字母等多种格式
-            """)
-        
-        with col_b:
-            st.markdown("### 📄 正文设置")
-            st.markdown("""
-            - **字体设置**：分别设置中英文字体
-            - **字号行距**：调整文本大小和行间距
-            - **段落格式**：设置缩进和段前段后间距
-            """)
-        
-        with col_c:
-            st.markdown("### 📊 表格设置")
-            st.markdown("""
-            - **表格字体**：表格内文字的字体设置
-            - **表格宽度**：调整表格的整体宽度
-            - **表格间距**：表格单元格内的文本间距
-            """)
+        # 侧边栏帮助信息
+        help_sidebar()
 
 if __name__ == "__main__":
     main()
