@@ -6,92 +6,507 @@ from io import BytesIO
 from docx.shared import Pt, Inches
 from docx.oxml.ns import qn
 from docx.shared import Cm
+from typing import Dict, Any
 
-# -------------- 默认值 --------------
-DEFAULTS = {
-    # 正文
-    "bdy_cz_font_name": "宋体",
-    "bdy_font_name": "Times New Roman",
-    "bdy_font_size": 10.5,
-    "bdy_space_before": 6.0,
-    "bdy_space_after": 6.0,
-    "bdy_line_spacing": 1.0,
-    "bdy_first_line_indent": 0.75,
-    # 表格
-    "tbl_cz_font_name": "宋体",
-    "tbl_font_name": "Times New Roman",
-    "tbl_font_size": 10.5,
-    "tbl_space_before": 4.0,
-    "tbl_space_after": 4.0,
-    "tbl_line_spacing": 1.0,
-    "tbl_width": 6.0,
-}
-# -------------- 初始化 / 重置 --------------
-def init_state():
-    for k, v in DEFAULTS.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
+# 页面配置
+st.set_page_config(
+    page_title="Word自动排版工具",
+    page_icon="📝",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-init_state()
+# ========== 初始化 session_state ==========
+if 'params_initialized' not in st.session_state:
+    # 默认参数配置
+    st.session_state.update({
+        # 正文
+        "bdy_cz_font_name": "宋体",
+        "bdy_font_name": "Times New Roman",
+        "bdy_font_size": 10.5,
+        "bdy_space_before": 6.0,
+        "bdy_space_after": 6.0,
+        "bdy_line_spacing": 1.0,
+        "bdy_first_line_indent": 0.75,
+        
+        # 表格
+        "tbl_cz_font_name": "宋体",
+        "tbl_font_name": "Times New Roman",
+        "tbl_font_size": 10.5,
+        "tbl_space_before": 4.0,
+        "tbl_space_after": 4.0,
+        "tbl_line_spacing": 1.0,
+        "tbl_width": 6.0,
+        
+        # 标题样式 (1-9级)
+        "h1_cz_font": "黑体",
+        "h1_font": "Arial",
+        "h1_size": 14,
+        "h1_bold": True,
+        "h1_before": 12,
+        "h1_after": 12,
+        "h1_line": 1.5,
+        "h1_indent": 0,
+        
+        "h2_cz_font": "黑体",
+        "h2_font": "Arial",
+        "h2_size": 12,
+        "h2_bold": True,
+        "h2_before": 12,
+        "h2_after": 12,
+        "h2_line": 1.5,
+        "h2_indent": 0.75,
+        
+        "h3_cz_font": "宋体",
+        "h3_font": "Times New Roman",
+        "h3_size": 10.5,
+        "h3_bold": False,
+        "h3_before": 8,
+        "h3_after": 8,
+        "h3_line": 1.0,
+        "h3_indent": 1.5,
+        
+        "h4_cz_font": "宋体",
+        "h4_font": "Times New Roman",
+        "h4_size": 10.5,
+        "h4_bold": False,
+        "h4_before": 8,
+        "h4_after": 8,
+        "h4_line": 1.0,
+        "h4_indent": 2.25,
+        
+        "h5_cz_font": "宋体",
+        "h5_font": "Times New Roman",
+        "h5_size": 10.5,
+        "h5_bold": False,
+        "h5_before": 6,
+        "h5_after": 6,
+        "h5_line": 1.0,
+        "h5_indent": 3.0,
+        
+        "h6_cz_font": "宋体",
+        "h6_font": "Arial",
+        "h6_size": 9,
+        "h6_bold": False,
+        "h6_before": 2,
+        "h6_after": 2,
+        "h6_line": 1.0,
+        "h6_indent": 0,
+        
+        "h7_cz_font": "宋体",
+        "h7_font": "Arial",
+        "h7_size": 8,
+        "h7_bold": False,
+        "h7_before": 0,
+        "h7_after": 0,
+        "h7_line": 1.0,
+        "h7_indent": 0,
+        
+        "h8_cz_font": "宋体",
+        "h8_font": "Arial",
+        "h8_size": 7,
+        "h8_bold": False,
+        "h8_before": 0,
+        "h8_after": 0,
+        "h8_line": 1.0,
+        "h8_indent": 0,
+        
+        "h9_cz_font": "宋体",
+        "h9_font": "Arial",
+        "h9_size": 6,
+        "h9_bold": False,
+        "h9_before": 0,
+        "h9_after": 0,
+        "h9_line": 1.0,
+        "h9_indent": 0,
+        
+        'params_initialized': True
+    })
 
-# -------------- 侧边栏：参数面板 --------------
+# ========== 侧边栏：参数设置 ==========
 with st.sidebar:
-    st.title("📏 格式参数")
+    st.title("⚙️ 排版设置")
+    
+    # 使用选项卡组织设置
+    tab1, tab2, tab3 = st.tabs(["标题样式", "正文格式", "表格格式"])
+    
+    with tab1:
+        st.subheader("标题样式设置")
+        
+        # 标题级别选择器
+        heading_level = st.selectbox(
+            "选择标题级别",
+            options=["1级", "2级", "3级", "4级", "5级", "6级", "7级", "8级", "9级"],
+            index=0
+        )
+        
+        # 获取当前级别对应的键前缀
+        level_num = int(heading_level[0])
+        prefix = f"h{level_num}_"
+        
+        # 动态显示对应级别的设置
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.session_state[f"{prefix}cz_font"] = st.selectbox(
+                "中文字体",
+                ["黑体", "宋体", "楷体", "仿宋", "微软雅黑"],
+                key=f"{prefix}cz_font_select"
+            )
+            
+            st.session_state[f"{prefix}font"] = st.selectbox(
+                "英文字体",
+                ["Arial", "Times New Roman", "Calibri", "Verdana"],
+                key=f"{prefix}font_select"
+            )
+            
+            st.session_state[f"{prefix}size"] = st.slider(
+                "字体大小",
+                min_value=6,
+                max_value=20,
+                value=int(st.session_state[f"{prefix}size"]),
+                key=f"{prefix}size_slider"
+            )
+            
+        with col2:
+            st.session_state[f"{prefix}bold"] = st.checkbox(
+                "粗体",
+                value=st.session_state[f"{prefix}bold"],
+                key=f"{prefix}bold_check"
+            )
+            
+            st.session_state[f"{prefix}before"] = st.number_input(
+                "段前间距",
+                min_value=0.0,
+                max_value=20.0,
+                value=float(st.session_state[f"{prefix}before"]),
+                step=0.5,
+                key=f"{prefix}before_input"
+            )
+            
+            st.session_state[f"{prefix}after"] = st.number_input(
+                "段后间距",
+                min_value=0.0,
+                max_value=20.0,
+                value=float(st.session_state[f"{prefix}after"]),
+                step=0.5,
+                key=f"{prefix}after_input"
+            )
+        
+        # 缩进和行距
+        col3, col4 = st.columns(2)
+        
+        with col3:
+            st.session_state[f"{prefix}indent"] = st.number_input(
+                "首行缩进(cm)",
+                min_value=0.0,
+                max_value=5.0,
+                value=float(st.session_state[f"{prefix}indent"]),
+                step=0.1,
+                key=f"{prefix}indent_input"
+            )
+        
+        with col4:
+            st.session_state[f"{prefix}line"] = st.slider(
+                "行间距",
+                min_value=1.0,
+                max_value=3.0,
+                value=float(st.session_state[f"{prefix}line"]),
+                step=0.1,
+                key=f"{prefix}line_slider"
+            )
+        
+        # 预览当前标题样式
+        st.markdown("---")
+        st.subheader("样式预览")
+        st.markdown(f"""
+        <div style="
+            font-family: '{st.session_state[f"{prefix}font"]}', '{st.session_state[f"{prefix}cz_font"]}';
+            font-size: {st.session_state[f"{prefix}size"]}pt;
+            font-weight: {'bold' if st.session_state[f"{prefix}bold"] else 'normal'};
+            margin: {st.session_state[f"{prefix}before"]}pt 0 {st.session_state[f"{prefix}after"]}pt 0;
+            line-height: {st.session_state[f"{prefix}line"]};
+            text-indent: {st.session_state[f"{prefix}indent"]}cm;
+        ">
+            标题 {heading_level} 样式预览
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with tab2:
+        st.subheader("正文格式设置")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.session_state["bdy_cz_font_name"] = st.selectbox(
+                "中文字体",
+                ["宋体", "黑体", "楷体", "仿宋", "微软雅黑"],
+                key="bdy_cz_font_select"
+            )
+            
+            st.session_state["bdy_font_name"] = st.selectbox(
+                "英文字体",
+                ["Times New Roman", "Arial", "Calibri", "Verdana"],
+                key="bdy_font_select"
+            )
+            
+            st.session_state["bdy_font_size"] = st.slider(
+                "字号",
+                min_value=8.0,
+                max_value=16.0,
+                value=float(st.session_state["bdy_font_size"]),
+                step=0.5,
+                key="bdy_size_slider"
+            )
+        
+        with col2:
+            st.session_state["bdy_space_before"] = st.number_input(
+                "段前间距",
+                min_value=0.0,
+                max_value=20.0,
+                value=float(st.session_state["bdy_space_before"]),
+                step=0.5,
+                key="bdy_before_input"
+            )
+            
+            st.session_state["bdy_space_after"] = st.number_input(
+                "段后间距",
+                min_value=0.0,
+                max_value=20.0,
+                value=float(st.session_state["bdy_space_after"]),
+                step=0.5,
+                key="bdy_after_input"
+            )
+        
+        st.session_state["bdy_line_spacing"] = st.slider(
+            "行间距",
+            min_value=0.5,
+            max_value=3.0,
+            value=float(st.session_state["bdy_line_spacing"]),
+            step=0.1,
+            key="bdy_line_slider"
+        )
+        
+        st.session_state["bdy_first_line_indent"] = st.slider(
+            "首行缩进",
+            min_value=0.0,
+            max_value=2.0,
+            value=float(st.session_state["bdy_first_line_indent"]),
+            step=0.1,
+            key="bdy_indent_slider"
+        )
+        
+        # 正文预览
+        st.markdown("---")
+        st.subheader("正文预览")
+        st.markdown(f"""
+        <div style="
+            font-family: '{st.session_state['bdy_font_name']}', '{st.session_state['bdy_cz_font_name']}';
+            font-size: {st.session_state['bdy_font_size']}pt;
+            margin: {st.session_state['bdy_space_before']}pt 0 {st.session_state['bdy_space_after']}pt 0;
+            line-height: {st.session_state['bdy_line_spacing']};
+            text-indent: {st.session_state['bdy_first_line_indent']}cm;
+        ">
+            这是正文样式预览。可以看到设置了首行缩进、字体大小和行间距等格式。
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with tab3:
+        st.subheader("表格格式设置")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.session_state["tbl_cz_font_name"] = st.selectbox(
+                "表格中文字体",
+                ["宋体", "黑体", "楷体", "仿宋", "微软雅黑"],
+                key="tbl_cz_font_select"
+            )
+            
+            st.session_state["tbl_font_name"] = st.selectbox(
+                "表格英文字体",
+                ["Times New Roman", "Arial", "Calibri", "Verdana"],
+                key="tbl_font_select"
+            )
+            
+            st.session_state["tbl_font_size"] = st.slider(
+                "表格字号",
+                min_value=8.0,
+                max_value=14.0,
+                value=float(st.session_state["tbl_font_size"]),
+                step=0.5,
+                key="tbl_size_slider"
+            )
+        
+        with col2:
+            st.session_state["tbl_space_before"] = st.number_input(
+                "表格段前间距",
+                min_value=0.0,
+                max_value=10.0,
+                value=float(st.session_state["tbl_space_before"]),
+                step=0.5,
+                key="tbl_before_input"
+            )
+            
+            st.session_state["tbl_space_after"] = st.number_input(
+                "表格段后间距",
+                min_value=0.0,
+                max_value=10.0,
+                value=float(st.session_state["tbl_space_after"]),
+                step=0.5,
+                key="tbl_after_input"
+            )
+        
+        st.session_state["tbl_line_spacing"] = st.slider(
+            "表格行间距",
+            min_value=0.5,
+            max_value=3.0,
+            value=float(st.session_state["tbl_line_spacing"]),
+            step=0.1,
+            key="tbl_line_slider"
+        )
+        
+        st.session_state["tbl_width"] = st.slider(
+            "表格宽度(英寸)",
+            min_value=3.0,
+            max_value=10.0,
+            value=float(st.session_state["tbl_width"]),
+            step=0.1,
+            key="tbl_width_slider"
+        )
+    
+    # 重置按钮
     st.markdown("---")
-    with st.expander("正文格式", expanded=True):
-        st.session_state["bdy_cz_font_name"] = st.text_input("中文字体", st.session_state["bdy_cz_font_name"])
-        st.session_state["bdy_font_name"] = st.text_input("英文字体", st.session_state["bdy_font_name"])
-        st.session_state["bdy_font_size"] = st.number_input("字号(pt)", 5.0, 30.0, st.session_state["bdy_font_size"], 0.5)
-        st.session_state["bdy_space_before"] = st.number_input("段前行距(pt)", 0.0, 50.0, st.session_state["bdy_space_before"])
-        st.session_state["bdy_space_after"] = st.number_input("段后行距(pt)", 0.0, 50.0, st.session_state["bdy_space_after"])
-        st.session_state["bdy_line_spacing"] = st.number_input("行距(倍)", 0.5, 3.0, st.session_state["bdy_line_spacing"], 0.1)
-        st.session_state["bdy_first_line_indent"] = st.number_input("首行缩进(cm)", 0.0, 5.0, st.session_state["bdy_first_line_indent"], 0.05)
-
-    with st.expander("表格格式", expanded=True):
-        st.session_state["tbl_cz_font_name"] = st.text_input("表格中文字体", st.session_state["tbl_cz_font_name"])
-        st.session_state["tbl_font_name"] = st.text_input("表格英文字体", st.session_state["tbl_font_name"])
-        st.session_state["tbl_font_size"] = st.number_input("表格字号(pt)", 5.0, 30.0, st.session_state["tbl_font_size"], 0.5)
-        st.session_state["tbl_space_before"] = st.number_input("表格段前行距(pt)", 0.0, 50.0, st.session_state["tbl_space_before"])
-        st.session_state["tbl_space_after"] = st.number_input("表格段后行距(pt)", 0.0, 50.0, st.session_state["tbl_space_after"])
-        st.session_state["tbl_line_spacing"] = st.number_input("表格行距(倍)", 0.5, 3.0, st.session_state["tbl_line_spacing"], 0.1)
-        st.session_state["tbl_width"] = st.number_input("表格宽度(inches)", 1.0, 10.0, st.session_state["tbl_width"], 0.1)
-
-    if st.button("重置全部参数"):
-        for k, v in DEFAULTS.items():
-            st.session_state[k] = v
+    if st.button("🔄 重置所有设置", use_container_width=True):
+        # 重置为默认值
+        defaults = {
+            "bdy_cz_font_name": "宋体",
+            "bdy_font_name": "Times New Roman",
+            "bdy_font_size": 10.5,
+            "bdy_space_before": 6.0,
+            "bdy_space_after": 6.0,
+            "bdy_line_spacing": 1.0,
+            "bdy_first_line_indent": 0.75,
+            "tbl_cz_font_name": "宋体",
+            "tbl_font_name": "Times New Roman",
+            "tbl_font_size": 10.5,
+            "tbl_space_before": 4.0,
+            "tbl_space_after": 4.0,
+            "tbl_line_spacing": 1.0,
+            "tbl_width": 6.0,
+        }
+        # 更新session_state
+        for key, value in defaults.items():
+            st.session_state[key] = value
+        st.success("已重置为默认设置！")
         st.rerun()
 
-# 标题样式
-style_rules = {
-    1: {'style_name': 'Heading 1', 'font_name': 'Arial','cz_font_name': '黑体', 'font_size': 14, 'bold': True, 'space_before': 12, 'space_after': 12, 'line_spacing': 1.5, 'first_line_indent': 0},
-    2: {'style_name': 'Heading 2', 'font_name': 'Arial','cz_font_name': '黑体', 'font_size': 12, 'bold': True, 'space_before': 12, 'space_after': 12, 'line_spacing': 1.5, 'first_line_indent': 0.75},
-    3: {'style_name': 'Heading 3', 'font_name': 'Times New Roman','cz_font_name': '宋体','font_size': 10.5, 'bold': False, 'space_before': 8, 'space_after': 8, 'line_spacing': 1.0, 'first_line_indent': 1.5},
-    4: {'style_name': 'Heading 4', 'font_name': 'Times New Roman','cz_font_name': '宋体', 'font_size': 10.5, 'bold': False, 'space_before': 8, 'space_after': 8, 'line_spacing': 1.0, 'first_line_indent': 2.25},
-    5: {'style_name': 'Heading 5', 'font_name': 'Times New Roman','cz_font_name': '宋体', 'font_size': 10.5, 'bold': False, 'space_before': 6, 'space_after': 6, 'line_spacing': 1.0, 'first_line_indent': 3.0},
-    6: {'style_name': 'Heading 6', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 9, 'bold': False, 'space_before': 2, 'space_after': 2, 'line_spacing': 1.0, 'first_line_indent': 0},
-    7: {'style_name': 'Heading 7', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 8, 'bold': False, 'space_before': 0, 'space_after': 0, 'line_spacing': 1.0, 'first_line_indent': 0},
-    8: {'style_name': 'Heading 8', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 7, 'bold': False, 'space_before': 0, 'space_after': 0, 'line_spacing': 1.0, 'first_line_indent': 0},
-    9: {'style_name': 'Heading 9', 'font_name': 'Arial','cz_font_name': '宋体', 'font_size': 6, 'bold': False, 'space_before': 0, 'space_after': 0, 'line_spacing': 1.0, 'first_line_indent': 0},
+# ========== 主页面：文件上传和处理 ==========
+st.title("📝 Word自动排版工具")
+st.markdown("---")
 
-}
+# 简介
+st.markdown("""
+**功能特点：**
+- 🎯 **智能排版**：自动识别文档结构，添加标题序号
+- 🎨 **灵活设置**：支持1-9级标题样式自定义
+- 📊 **格式统一**：批量设置正文、表格格式
+- ⚡ **批量处理**：支持多文件同时处理
 
-# 正文格式
-bdy_cz_font_name = st.session_state["bdy_cz_font_name"]  # 字体
-bdy_font_name = st.session_state["bdy_font_name"]
-bdy_font_size = Pt(st.session_state["bdy_font_size"])  # 字号
-bdy_space_before = Pt(st.session_state["bdy_space_before"])  # 段前行距
-bdy_space_after = Pt(st.session_state["bdy_space_after"])  # 段后行距
-bdy_line_spacing = st.session_state["bdy_line_spacing"]  #行距
-bdy_first_line_indent = Cm(st.session_state["bdy_first_line_indent"])  # 首行缩进
+**使用步骤：**
+1. 左侧面板设置排版参数
+2. 上传Word文档（支持多选）
+3. 点击"开始处理"按钮
+4. 下载处理后的文档
+""")
 
-# 表格格式
-tbl_cz_font_name = st.session_state["tbl_cz_font_name"]  # 中文字体
-tbl_font_name = st.session_state["tbl_font_name"]  # 英文字体
-tbl_font_size = Pt(st.session_state["tbl_font_size"])  # 表格字号
-tbl_space_before = Pt(st.session_state["tbl_space_before"])  # 表格段前行距
-tbl_space_after = Pt(st.session_state["tbl_space_after"])  # 表格段后行距
-tbl_line_spacing = st.session_state["tbl_line_spacing"]  #行距
-tbl_width = Inches(st.session_state["tbl_width"])
+# 文件上传区域
+st.markdown("### 📤 上传文档")
+uploaded_files = st.file_uploader(
+    "选择Word文档 (.docx)",
+    type=["docx"],
+    accept_multiple_files=True,
+    help="可以一次上传多个文档进行批量处理"
+)
+
+# 显示已上传文件
+if uploaded_files:
+    st.success(f"✅ 已选择 {len(uploaded_files)} 个文档")
+    
+    with st.expander("📋 已上传文件列表", expanded=True):
+        for i, file in enumerate(uploaded_files, 1):
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"{i}. **{file.name}**")
+            with col2:
+                st.write(f"`{file.size / 1024:.1f} KB`")
+
+# 处理按钮
+if uploaded_files:
+    st.markdown("---")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🚀 开始处理文档", type="primary", use_container_width=True):
+            # 创建进度条
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # 从session_state获取当前样式配置
+            style_rules = {}
+            for level in range(1, 10):
+                prefix = f"h{level}_"
+                style_rules[level] = {
+                    'style_name': f'Heading {level}',
+                    'cz_font_name': st.session_state[f"{prefix}cz_font"],
+                    'font_name': st.session_state[f"{prefix}font"],
+                    'font_size': st.session_state[f"{prefix}size"],
+                    'bold': st.session_state[f"{prefix}bold"],
+                    'space_before': st.session_state[f"{prefix}before"],
+                    'space_after': st.session_state[f"{prefix}after"],
+                    'line_spacing': st.session_state[f"{prefix}line"],
+                    'first_line_indent': st.session_state[f"{prefix}indent"],
+                }
+            
+            # 处理每个文件
+            for idx, uploaded_file in enumerate(uploaded_files):
+                # 更新进度
+                progress = (idx + 1) / len(uploaded_files)
+                progress_bar.progress(progress)
+                status_text.text(f"正在处理: **{uploaded_file.name}** ({idx + 1}/{len(uploaded_files)})")
+                
+                try:
+                    # 处理文档
+                    processed_buffer = process_single_document(
+                        uploaded_file.read(),
+                        style_rules,
+                        st.session_state
+                    )
+                    
+                    # 提供下载
+                    with st.container():
+                        st.download_button(
+                            label=f"📥 下载 {uploaded_file.name}",
+                            data=processed_buffer,
+                            file_name=f"排版_{uploaded_file.name}",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            key=f"download_{idx}",
+                            use_container_width=True
+                        )
+                    
+                except Exception as e:
+                    st.error(f"处理 {uploaded_file.name} 时出错: `{str(e)}`")
+            
+            # 完成提示
+            progress_bar.empty()
+            status_text.success("✅ 所有文档处理完成！")
+            st.balloons()
+
+else:
+    st.info("👈 请先在左侧设置参数，然后上传需要排版的Word文档")
+
+# ========== 工具函数定义 ==========
+# 将原来的函数整合到下面
 
 KNOWN_STYLES = {
     "Normal",
@@ -101,48 +516,41 @@ KNOWN_STYLES = {
 }
 
 def get_outline_level_from_xml(p):
-    """
-    从段落的XML中提取大纲级别，并加1
-    """
+    """从段落的XML中提取大纲级别，并加1"""
     xml = p._p.xml
     m = re.search(r'<w:outlineLvl w:val="(\d)"/>', xml)
     level = int(m.group(1)) if m else None
     if level is not None:
-        level += 1  # 加1
+        level += 1
     return level
 
 def restructure_outline(doc):
-    # ---------- 1. 升级：XML 大纲 → Heading ----------
+    """重构文档大纲"""
     for p in doc.paragraphs:
         zero_indent(p)
         lvl = get_outline_level_from_xml(p)
         if lvl and p.style.name == "Normal":
-            # Heading 1~9 才存在
             heading_style = f"Heading {lvl}"
             if heading_style in doc.styles:
                 p.style = doc.styles[heading_style]
+    
+    # 降级空标题
+    for p in doc.paragraphs:
+        if p.style.name.startswith("Heading") and not p.text.strip():
+            p.style = doc.styles["Normal"]
 
-    # ---------- 2. 降级：空标题 ----------
-    headings_idx: List[int] = []
-    for idx, p in enumerate(doc.paragraphs):
-        if p.style.name.startswith("Heading"):
-            headings_idx.append(idx)
-            if not p.text.strip():          # 空
-                p.style = doc.styles["Normal"]
-           
 def zero_indent(p):
+    """清除段落缩进"""
     pf = p.paragraph_format
-    pf.left_indent       = Cm(0)
+    pf.left_indent = Cm(0)
     pf.first_line_indent = Cm(0)
-    pf.right_indent      = Cm(0)
-    pf.tab_stops.clear_all()   # 清制表位
-    # 再删段首空格/Tab
+    pf.right_indent = Cm(0)
+    pf.tab_stops.clear_all()
     if p.text:
         p.text = p.text.lstrip()
 
 def kill_all_numbering(doc):
-    """样式级 + 段落级 编号全部清零"""
-    # 1. 样式级：把所有带 numId 的样式拔掉
+    """清除所有编号"""
     for st_name in ['List Paragraph', 'Heading 1', 'Heading 2', 'Heading 3',
                     'Heading 4', 'Heading 5', 'Heading 6', 'Heading 7',
                     'Heading 8', 'Heading 9']:
@@ -152,30 +560,21 @@ def kill_all_numbering(doc):
             continue
         style_el = style._element
         for num_id in style_el.xpath('.//w:numId'):
-            num_id.getparent().remove(num_id) 
-               
-def set_font(run, cz_font_name, font_name):
-    """
-    设置字体。
+            num_id.getparent().remove(num_id)
 
-    :param run: 文本运行对象
-    :param chinese_font_name: 中文字体名称
-    :param english_font_name: 英文字体名称
-    """
-    # 获取或创建字体属性
+def set_font(run, cz_font_name, font_name):
+    """设置字体"""
     rPr = run.element.get_or_add_rPr()
     rFonts = rPr.get_or_add_rFonts()
-    # 设置中文字体和英文字体
     rFonts.set(qn('w:eastAsia'), cz_font_name)
     rFonts.set(qn('w:ascii'), font_name)
-    
-# 手动实现数字到中文大写数字的转换
+
 def number_to_chinese(number):
+    """数字转中文大写数字"""
     if number < 0 or number > 100:
         raise ValueError("数字必须在0到100之间")
     
     chinese_numbers = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
-    chinese_units = ["", "十", "百"]
     
     if number < 10:
         return chinese_numbers[number]
@@ -187,116 +586,116 @@ def number_to_chinese(number):
         return chinese_numbers[tens] + "十" + (chinese_numbers[ones] if ones != 0 else "")
     else:
         return "一百"
-           
-# 添加标题序号
+
 def add_heading_numbers(doc):
-    
+    """添加标题序号"""
     number_pattern = re.compile(
-        r'^\s*'                                  # 前导空格
-        r'[（(]?'                                # 可选左括号
-        r'[\d一二三四五六七八九十零]{1,3}'        # 首位数字
-        r'[\.、）)\s]'                            # 分隔符（含空格）
-        r'(?:[\d一二三四五六七八九十零]{1,3}'     # 后续数字
-        r'[\.、）)\s]'                            # 后续分隔符（含空格）
-        r')*'                                    # 重复任意次
-        , re.UNICODE
+        r'^\s*'
+        r'[（(]?'
+        r'[\d一二三四五六七八九十零]{1,3}'
+        r'[\.、）)\s]'
+        r'(?:[\d一二三四五六七八九十零]{1,3}'
+        r'[\.、）)\s]'
+        r')*',
+        re.UNICODE
     )
     
-    # 初始化标题序号
-    heading_numbers = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # 假设最多有九级标题
+    heading_numbers = [0] * 9
     
     def circled_num(n: int) -> str:
-        if 1 <= n <= 20:                       # 目前 Unicode 只到 ⑳
-            return chr(0x245F + n)             # 0x2460 - 1 + n
-        return str(n)                          # 超出 fallback
-        
-    # 定义不同层级的序号格式
+        if 1 <= n <= 20:
+            return chr(0x245F + n)
+        return str(n)
+    
     def format_number(level, number):
-        if level == 0:
-            return f"{number_to_chinese(number)}、"  # 第一层级：一、二、三、
-        elif level == 1:
-            return f"（{number_to_chinese(number)}）"  # 第二层级：（一）（二）（三）
-        elif level == 2:
-            return f"{number}."  # 第三层级：1.2.3.
-        elif level == 3:
-            return f"（{number}）"  # 第四层级：（1）（2）（3）
-        elif level == 4:
-            return f"{circled_num(number)} "  # 第五层级：圈1 圈2 圈3
-        elif level == 5:
-            return f"{circled_num(number)} "  # 第六层级：圈1 圈2 圈3
-        elif level == 6:
-            return f"{circled_num(number)} "  # 第七层级：圈1 圈2 圈3
-        elif level == 7:
-            return f"{circled_num(number)} "  # 第八层级：圈1 圈2 圈3
-        elif level == 8:
-            return f"{circled_num(number)} "  # 第九层级：圈1 圈2 圈3
-        else:
-            return f"{number}."  # 默认格式
-
-    # 遍历文档中的所有段落
+        formats = [
+            lambda n: f"{number_to_chinese(n)}、",
+            lambda n: f"（{number_to_chinese(n)}）",
+            lambda n: f"{n}.",
+            lambda n: f"（{n}）",
+            lambda n: f"{circled_num(n)} ",
+            lambda n: f"{circled_num(n)} ",
+            lambda n: f"{circled_num(n)} ",
+            lambda n: f"{circled_num(n)} ",
+            lambda n: f"{circled_num(n)} ",
+        ]
+        return formats[level](number) if level < len(formats) else f"{number}."
+    
     for paragraph in doc.paragraphs:
-        # 检查段落是否是标题
         if paragraph.style.name.startswith('Heading'):
-            #清洗手写序号
             if paragraph.text == "Ellipsis" or not paragraph.text.strip():
-                continue            
+                continue
+            
+            # 清除原有编号
             for p in doc.paragraphs:
                 p_pr = p._p.get_or_add_pPr()
                 num_pr = p_pr.find(qn('w:numPr'))
                 if num_pr is not None:
                     p_pr.remove(num_pr)
+            
             paragraph.text = number_pattern.sub('', paragraph.text).strip()
-            # 获取标题级别
             level = int(paragraph.style.name.split(' ')[1]) - 1
-
+            
             # 更新序号
             heading_numbers[level] += 1
             for i in range(level + 1, len(heading_numbers)):
-                heading_numbers[i] = 0  # 重置下级标题序号
+                heading_numbers[i] = 0
+            
+            # 添加序号
+            if heading_numbers[level] > 0:
+                number_str = format_number(level, heading_numbers[level])
+                paragraph.text = number_str + paragraph.text
 
-            # 构造序号字符串
-            number_str = format_number(level, heading_numbers[level])
-
-            # 添加序号到标题文本
-            paragraph.text = number_str + paragraph.text
-
-def modify_document_format(doc):
+def process_single_document(file_bytes, style_rules, params):
+    """处理单个文档"""
+    doc = Document(BytesIO(file_bytes))
+    
+    # 重构大纲
+    restructure_outline(doc)
+    
+    # 清除编号
+    kill_all_numbering(doc)
+    
+    # 添加标题序号
+    add_heading_numbers(doc)
+    
+    # 应用格式
     skipped = set()
-
+    
     for p in doc.paragraphs:
         style_name = p.style.name
-
-        # 跳过空段落
+        
         if p.text == "Ellipsis" or not p.text.strip():
             continue
-
+        
         if style_name not in KNOWN_STYLES:
             skipped.add(style_name)
             continue
-
+        
         if style_name.startswith("Heading"):
-            for rule_lvl, rule in style_rules.items():
-                if rule['style_name'] == style_name:
-                    p.style.paragraph_format.space_before = Pt(rule['space_before'])
-                    p.style.paragraph_format.space_after = Pt(rule['space_after'])
-                    p.style.paragraph_format.line_spacing = rule['line_spacing']
-                    p.style.paragraph_format.first_line_indent = Cm(rule['first_line_indent'])
-                    for run in p.runs:
-                        set_font(run, rule['cz_font_name'], rule['font_name'])
-                        run.font.size = Pt(rule['font_size'])
-                        run.font.bold = rule['bold']
-        else:
-            p.paragraph_format.space_before = bdy_space_before
-            p.paragraph_format.space_after = bdy_space_after
-            p.paragraph_format.line_spacing = bdy_line_spacing
-            p.paragraph_format.first_line_indent = bdy_first_line_indent
+            level = int(style_name.split(' ')[1])
+            rule = style_rules[level]
+            p.style.paragraph_format.space_before = Pt(rule['space_before'])
+            p.style.paragraph_format.space_after = Pt(rule['space_after'])
+            p.style.paragraph_format.line_spacing = rule['line_spacing']
+            p.style.paragraph_format.first_line_indent = Cm(rule['first_line_indent'])
             for run in p.runs:
-                set_font(run, bdy_cz_font_name, bdy_font_name)
-                run.font.size = bdy_font_size
-
-    # 表格处理不变
+                set_font(run, rule['cz_font_name'], rule['font_name'])
+                run.font.size = Pt(rule['font_size'])
+                run.font.bold = rule['bold']
+        else:
+            # 正文格式
+            p.paragraph_format.space_before = Pt(params['bdy_space_before'])
+            p.paragraph_format.space_after = Pt(params['bdy_space_after'])
+            p.paragraph_format.line_spacing = params['bdy_line_spacing']
+            p.paragraph_format.first_line_indent = Cm(params['bdy_first_line_indent'])
+            for run in p.runs:
+                set_font(run, params['bdy_cz_font_name'], params['bdy_font_name'])
+                run.font.size = Pt(params['bdy_font_size'])
+    
+    # 表格格式
     for tbl in doc.tables:
-        tbl.width = tbl_width
+        tbl.width = Inches(params['tbl_width'])
         for row in tbl.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
@@ -304,60 +703,22 @@ def modify_document_format(doc):
                         skipped.add(f"表格内：{p.style.name}")
                         continue
                     for run in p.runs:
-                        set_font(run, tbl_cz_font_name, tbl_font_name)
-                        run.font.size = tbl_font_size
-                    p.paragraph_format.space_before = tbl_space_before
-                    p.paragraph_format.space_after = tbl_space_after
-                    p.paragraph_format.line_spacing = tbl_line_spacing
-
+                        set_font(run, params['tbl_cz_font_name'], params['tbl_font_name'])
+                        run.font.size = Pt(params['tbl_font_size'])
+                    p.paragraph_format.space_before = Pt(params['tbl_space_before'])
+                    p.paragraph_format.space_after = Pt(params['tbl_space_after'])
+                    p.paragraph_format.line_spacing = params['tbl_line_spacing']
+    
     if skipped:
-        st.warning("以下样式未被处理（已跳过）：")
-        st.text("\n".join(sorted(skipped)))
-    else:
-        st.success("所有段落/表格样式均已成功处理！")
-
-def process_doc(uploaded_bytes):
-    doc = Document(BytesIO(uploaded_bytes))
-    restructure_outline(doc)
-    kill_all_numbering(doc)
-    add_heading_numbers(doc)
-    modify_document_format(doc)
+        st.warning(f"跳过样式: {', '.join(sorted(skipped))}")
+    
+    # 保存到buffer
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     return buffer
 
-# ---------------- Streamlit 界面 ----------------
-st.title("Word 自动排版")
-
-files = st.file_uploader("上传一个或多个 docx",
-                         type=["docx"],
-                         accept_multiple_files=True)
-
-if files and st.button("开始批量排版"):
-    if len(files) == 0:
-        st.warning("请先上传文件")
-        st.stop()
-
-    with st.spinner(f"共 {len(files)} 个文件，正在逐个处理…"):
-        for f in files:
-            out_buffer = process_doc(f.read())
-            st.download_button(
-                label=f"下载 ➤ {f.name.replace('.docx', '')}_已排版.docx",
-                data=out_buffer,
-                file_name=f"{f.name.replace('.docx', '')}_已排版.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
-
-
-
-
-
-
-
-
-
-
-
-
-
+# 运行提示
+if __name__ == "__main__":
+    st.markdown("---")
+    st.caption("© 2024 Word自动排版工具 | 版本 2.0")
