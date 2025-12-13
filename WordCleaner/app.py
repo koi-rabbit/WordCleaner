@@ -133,22 +133,14 @@ with st.sidebar:
     
     with tab1:
         # 标题级别选择器
-        heading_options = ["1级", "2级", "3级", "4级", "5级", "6级", "7级", "8级", "9级"]
-        selected_heading = st.radio(
+        heading_level = st.selectbox(
             "",
-            options=heading_options,
-            index=st.session_state.get('current_heading_level', 0),
-            horizontal=True,
+            options=["1级", "2级", "3级", "4级", "5级", "6级", "7级", "8级", "9级"],
+            index=0,
             label_visibility="collapsed"
         )
         
-        # 更新当前选中的标题级别
-        level_num = int(selected_heading[0])
-        st.session_state['current_heading_level'] = level_num - 1  # 存储索引
-        prefix = f"h{level_num}_"
-        
         st.markdown("---")
-        
         # 字体设置 - 使用两行显示，避免拥挤
         col1, col2 = st.columns(2)
         with col1:
@@ -860,4 +852,5 @@ def process_single_document(file_bytes, style_rules, params):
 # 页脚
 st.markdown("---")
 st.caption("© 2024 Word自动排版工具 | 专业排版 • 高效便捷")
+
 
