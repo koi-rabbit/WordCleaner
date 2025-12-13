@@ -120,105 +120,135 @@ if 'params_initialized' not in st.session_state:
         "h9_line": 1.0,
         "h9_indent": 0,
         
-        'params_initialized': True
+        'params_initialized': True,
+        'current_heading_level': 1  # 当前选中的标题级别
     })
 
-# ========== 侧边栏：参数设置 ==========
+# ========== 侧边栏：简洁的参数设置 ==========
 with st.sidebar:
     st.title("⚙️ 排版设置")
     
     # 使用选项卡组织设置
-    tab1, tab2, tab3 = st.tabs(["标题样式", "正文格式", "表格格式"])
+    tab1, tab2, tab3 = st.tabs(["标题", "正文", "表格"])
     
     with tab1:
-        st.subheader("标题样式设置")
-        
         # 标题级别选择器
-        heading_level = st.selectbox(
-            "选择标题级别",
-            options=["1级", "2级", "3级", "4级", "5级", "6级", "7级", "8级", "9级"],
-            index=0
+        st.markdown("**选择标题级别**")
+        heading_options = ["1级", "2级", "3级", "4级", "5级", "6级", "7级", "8级", "9级"]
+        selected_heading = st.radio(
+            "",
+            options=heading_options,
+            index=st.session_state.get('current_heading_level', 0),
+            horizontal=True,
+            label_visibility="collapsed"
         )
         
-        # 获取当前级别对应的键前缀
-        level_num = int(heading_level[0])
+        # 更新当前选中的标题级别
+        level_num = int(selected_heading[0])
+        st.session_state['current_heading_level'] = level_num - 1  # 存储索引
         prefix = f"h{level_num}_"
         
-        # 动态显示对应级别的设置
-        col1, col2 = st.columns(2)
+        st.markdown("---")
         
+        # 字体设置 - 使用两行显示，避免拥挤
+        st.markdown("**字体设置**")
+        col1, col2 = st.columns(2)
         with col1:
+            st.markdown("中文字体")
             st.session_state[f"{prefix}cz_font"] = st.selectbox(
-                "中文字体",
+                "",
                 ["黑体", "宋体", "楷体", "仿宋", "微软雅黑"],
-                key=f"{prefix}cz_font_select"
+                index=["黑体", "宋体", "楷体", "仿宋", "微软雅黑"].index(st.session_state.get(f"{prefix}cz_font", "黑体")),
+                key=f"{prefix}cz_font_select",
+                label_visibility="collapsed"
             )
-            
+        with col2:
+            st.markdown("英文字体")
             st.session_state[f"{prefix}font"] = st.selectbox(
-                "英文字体",
+                "",
                 ["Arial", "Times New Roman", "Calibri", "Verdana"],
-                key=f"{prefix}font_select"
+                index=["Arial", "Times New Roman", "Calibri", "Verdana"].index(st.session_state.get(f"{prefix}font", "Arial")),
+                key=f"{prefix}font_select",
+                label_visibility="collapsed"
             )
-            
+        
+        # 字体大小和粗体
+        st.markdown("**字体属性**")
+        col_size, col_bold = st.columns([3, 1])
+        with col_size:
+            st.markdown("字体大小")
             st.session_state[f"{prefix}size"] = st.slider(
-                "字体大小",
+                "",
                 min_value=6,
                 max_value=20,
                 value=int(st.session_state[f"{prefix}size"]),
-                key=f"{prefix}size_slider"
+                key=f"{prefix}size_slider",
+                label_visibility="collapsed"
             )
-            
-        with col2:
+        with col_bold:
+            st.markdown("粗体")
             st.session_state[f"{prefix}bold"] = st.checkbox(
-                "粗体",
+                "",
                 value=st.session_state[f"{prefix}bold"],
-                key=f"{prefix}bold_check"
+                key=f"{prefix}bold_check",
+                label_visibility="collapsed"
             )
-            
+        
+        # 间距设置
+        st.markdown("**段落间距**")
+        col_before, col_after = st.columns(2)
+        with col_before:
+            st.markdown("段前间距(pt)")
             st.session_state[f"{prefix}before"] = st.number_input(
-                "段前间距",
+                "",
                 min_value=0.0,
                 max_value=20.0,
                 value=float(st.session_state[f"{prefix}before"]),
                 step=0.5,
-                key=f"{prefix}before_input"
+                key=f"{prefix}before_input",
+                label_visibility="collapsed"
             )
-            
+        with col_after:
+            st.markdown("段后间距(pt)")
             st.session_state[f"{prefix}after"] = st.number_input(
-                "段后间距",
+                "",
                 min_value=0.0,
                 max_value=20.0,
                 value=float(st.session_state[f"{prefix}after"]),
                 step=0.5,
-                key=f"{prefix}after_input"
+                key=f"{prefix}after_input",
+                label_visibility="collapsed"
             )
         
-        # 缩进和行距
-        col3, col4 = st.columns(2)
-        
-        with col3:
-            st.session_state[f"{prefix}indent"] = st.number_input(
-                "首行缩进(cm)",
-                min_value=0.0,
-                max_value=5.0,
-                value=float(st.session_state[f"{prefix}indent"]),
-                step=0.1,
-                key=f"{prefix}indent_input"
-            )
-        
-        with col4:
+        # 行距和缩进
+        st.markdown("**段落格式**")
+        col_line, col_indent = st.columns(2)
+        with col_line:
+            st.markdown("行间距")
             st.session_state[f"{prefix}line"] = st.slider(
-                "行间距",
+                "",
                 min_value=1.0,
                 max_value=3.0,
                 value=float(st.session_state[f"{prefix}line"]),
                 step=0.1,
-                key=f"{prefix}line_slider"
+                key=f"{prefix}line_slider",
+                label_visibility="collapsed"
+            )
+        with col_indent:
+            st.markdown("首行缩进(cm)")
+            st.session_state[f"{prefix}indent"] = st.number_input(
+                "",
+                min_value=0.0,
+                max_value=5.0,
+                value=float(st.session_state[f"{prefix}indent"]),
+                step=0.1,
+                key=f"{prefix}indent_input",
+                label_visibility="collapsed"
             )
         
-        # 预览当前标题样式
+        # 样式预览
         st.markdown("---")
-        st.subheader("样式预览")
+        st.markdown("**样式预览**")
         st.markdown(f"""
         <div style="
             font-family: '{st.session_state[f"{prefix}font"]}', '{st.session_state[f"{prefix}cz_font"]}';
@@ -227,78 +257,107 @@ with st.sidebar:
             margin: {st.session_state[f"{prefix}before"]}pt 0 {st.session_state[f"{prefix}after"]}pt 0;
             line-height: {st.session_state[f"{prefix}line"]};
             text-indent: {st.session_state[f"{prefix}indent"]}cm;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
         ">
-            标题 {heading_level} 样式预览
+            标题 {selected_heading} 样式预览
         </div>
         """, unsafe_allow_html=True)
     
     with tab2:
-        st.subheader("正文格式设置")
+        st.markdown("### 正文格式")
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
+        # 字体设置
+        st.markdown("**字体设置**")
+        col_bdy_font1, col_bdy_font2 = st.columns(2)
+        with col_bdy_font1:
+            st.markdown("中文字体")
             st.session_state["bdy_cz_font_name"] = st.selectbox(
-                "中文字体",
+                "",
                 ["宋体", "黑体", "楷体", "仿宋", "微软雅黑"],
-                key="bdy_cz_font_select"
+                index=["宋体", "黑体", "楷体", "仿宋", "微软雅黑"].index(st.session_state.get("bdy_cz_font_name", "宋体")),
+                key="bdy_cz_font_select",
+                label_visibility="collapsed"
             )
-            
+        with col_bdy_font2:
+            st.markdown("英文字体")
             st.session_state["bdy_font_name"] = st.selectbox(
-                "英文字体",
+                "",
                 ["Times New Roman", "Arial", "Calibri", "Verdana"],
-                key="bdy_font_select"
-            )
-            
-            st.session_state["bdy_font_size"] = st.slider(
-                "字号",
-                min_value=8.0,
-                max_value=16.0,
-                value=float(st.session_state["bdy_font_size"]),
-                step=0.5,
-                key="bdy_size_slider"
+                index=["Times New Roman", "Arial", "Calibri", "Verdana"].index(st.session_state.get("bdy_font_name", "Times New Roman")),
+                key="bdy_font_select",
+                label_visibility="collapsed"
             )
         
-        with col2:
+        # 字体大小
+        st.markdown("**字体大小**")
+        st.session_state["bdy_font_size"] = st.slider(
+            "",
+            min_value=8.0,
+            max_value=16.0,
+            value=float(st.session_state["bdy_font_size"]),
+            step=0.5,
+            key="bdy_size_slider",
+            label_visibility="collapsed"
+        )
+        
+        # 间距设置
+        st.markdown("**段落间距**")
+        col_bdy_before, col_bdy_after = st.columns(2)
+        with col_bdy_before:
+            st.markdown("段前间距(pt)")
             st.session_state["bdy_space_before"] = st.number_input(
-                "段前间距",
+                "",
                 min_value=0.0,
                 max_value=20.0,
                 value=float(st.session_state["bdy_space_before"]),
                 step=0.5,
-                key="bdy_before_input"
+                key="bdy_before_input",
+                label_visibility="collapsed"
             )
-            
+        with col_bdy_after:
+            st.markdown("段后间距(pt)")
             st.session_state["bdy_space_after"] = st.number_input(
-                "段后间距",
+                "",
                 min_value=0.0,
                 max_value=20.0,
                 value=float(st.session_state["bdy_space_after"]),
                 step=0.5,
-                key="bdy_after_input"
+                key="bdy_after_input",
+                label_visibility="collapsed"
             )
         
-        st.session_state["bdy_line_spacing"] = st.slider(
-            "行间距",
-            min_value=0.5,
-            max_value=3.0,
-            value=float(st.session_state["bdy_line_spacing"]),
-            step=0.1,
-            key="bdy_line_slider"
-        )
-        
-        st.session_state["bdy_first_line_indent"] = st.slider(
-            "首行缩进",
-            min_value=0.0,
-            max_value=2.0,
-            value=float(st.session_state["bdy_first_line_indent"]),
-            step=0.1,
-            key="bdy_indent_slider"
-        )
+        # 行距和缩进
+        st.markdown("**段落格式**")
+        col_bdy_line, col_bdy_indent = st.columns(2)
+        with col_bdy_line:
+            st.markdown("行间距")
+            st.session_state["bdy_line_spacing"] = st.slider(
+                "",
+                min_value=0.5,
+                max_value=3.0,
+                value=float(st.session_state["bdy_line_spacing"]),
+                step=0.1,
+                key="bdy_line_slider",
+                label_visibility="collapsed"
+            )
+        with col_bdy_indent:
+            st.markdown("首行缩进(cm)")
+            st.session_state["bdy_first_line_indent"] = st.slider(
+                "",
+                min_value=0.0,
+                max_value=2.0,
+                value=float(st.session_state["bdy_first_line_indent"]),
+                step=0.1,
+                key="bdy_indent_slider",
+                label_visibility="collapsed"
+            )
         
         # 正文预览
         st.markdown("---")
-        st.subheader("正文预览")
+        st.markdown("**正文预览**")
         st.markdown(f"""
         <div style="
             font-family: '{st.session_state['bdy_font_name']}', '{st.session_state['bdy_cz_font_name']}';
@@ -306,169 +365,253 @@ with st.sidebar:
             margin: {st.session_state['bdy_space_before']}pt 0 {st.session_state['bdy_space_after']}pt 0;
             line-height: {st.session_state['bdy_line_spacing']};
             text-indent: {st.session_state['bdy_first_line_indent']}cm;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
         ">
-            这是正文样式预览。可以看到设置了首行缩进、字体大小和行间距等格式。
+            这是正文样式预览。文档的正文内容将使用此格式进行设置，包括字体、字号、行距和首行缩进等。
         </div>
         """, unsafe_allow_html=True)
     
     with tab3:
-        st.subheader("表格格式设置")
+        st.markdown("### 表格格式")
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
+        # 字体设置
+        st.markdown("**字体设置**")
+        col_tbl_font1, col_tbl_font2 = st.columns(2)
+        with col_tbl_font1:
+            st.markdown("中文字体")
             st.session_state["tbl_cz_font_name"] = st.selectbox(
-                "表格中文字体",
+                "",
                 ["宋体", "黑体", "楷体", "仿宋", "微软雅黑"],
-                key="tbl_cz_font_select"
+                index=["宋体", "黑体", "楷体", "仿宋", "微软雅黑"].index(st.session_state.get("tbl_cz_font_name", "宋体")),
+                key="tbl_cz_font_select",
+                label_visibility="collapsed"
             )
-            
+        with col_tbl_font2:
+            st.markdown("英文字体")
             st.session_state["tbl_font_name"] = st.selectbox(
-                "表格英文字体",
+                "",
                 ["Times New Roman", "Arial", "Calibri", "Verdana"],
-                key="tbl_font_select"
-            )
-            
-            st.session_state["tbl_font_size"] = st.slider(
-                "表格字号",
-                min_value=8.0,
-                max_value=14.0,
-                value=float(st.session_state["tbl_font_size"]),
-                step=0.5,
-                key="tbl_size_slider"
+                index=["Times New Roman", "Arial", "Calibri", "Verdana"].index(st.session_state.get("tbl_font_name", "Times New Roman")),
+                key="tbl_font_select",
+                label_visibility="collapsed"
             )
         
-        with col2:
+        # 字体大小
+        st.markdown("**字体大小**")
+        st.session_state["tbl_font_size"] = st.slider(
+            "",
+            min_value=8.0,
+            max_value=14.0,
+            value=float(st.session_state["tbl_font_size"]),
+            step=0.5,
+            key="tbl_size_slider",
+            label_visibility="collapsed"
+        )
+        
+        # 间距设置
+        st.markdown("**单元格间距**")
+        col_tbl_before, col_tbl_after = st.columns(2)
+        with col_tbl_before:
+            st.markdown("段前间距(pt)")
             st.session_state["tbl_space_before"] = st.number_input(
-                "表格段前间距",
+                "",
                 min_value=0.0,
                 max_value=10.0,
                 value=float(st.session_state["tbl_space_before"]),
                 step=0.5,
-                key="tbl_before_input"
+                key="tbl_before_input",
+                label_visibility="collapsed"
             )
-            
+        with col_tbl_after:
+            st.markdown("段后间距(pt)")
             st.session_state["tbl_space_after"] = st.number_input(
-                "表格段后间距",
+                "",
                 min_value=0.0,
                 max_value=10.0,
                 value=float(st.session_state["tbl_space_after"]),
                 step=0.5,
-                key="tbl_after_input"
+                key="tbl_after_input",
+                label_visibility="collapsed"
             )
         
-        st.session_state["tbl_line_spacing"] = st.slider(
-            "表格行间距",
-            min_value=0.5,
-            max_value=3.0,
-            value=float(st.session_state["tbl_line_spacing"]),
-            step=0.1,
-            key="tbl_line_slider"
-        )
-        
-        st.session_state["tbl_width"] = st.slider(
-            "表格宽度(英寸)",
-            min_value=3.0,
-            max_value=10.0,
-            value=float(st.session_state["tbl_width"]),
-            step=0.1,
-            key="tbl_width_slider"
-        )
+        # 行距和宽度
+        st.markdown("**表格格式**")
+        col_tbl_line, col_tbl_width = st.columns(2)
+        with col_tbl_line:
+            st.markdown("行间距")
+            st.session_state["tbl_line_spacing"] = st.slider(
+                "",
+                min_value=0.5,
+                max_value=3.0,
+                value=float(st.session_state["tbl_line_spacing"]),
+                step=0.1,
+                key="tbl_line_slider",
+                label_visibility="collapsed"
+            )
+        with col_tbl_width:
+            st.markdown("表格宽度(英寸)")
+            st.session_state["tbl_width"] = st.slider(
+                "",
+                min_value=3.0,
+                max_value=10.0,
+                value=float(st.session_state["tbl_width"]),
+                step=0.1,
+                key="tbl_width_slider",
+                label_visibility="collapsed"
+            )
     
-    # 重置按钮
+    # 重置按钮和操作说明
     st.markdown("---")
-    if st.button("🔄 重置所有设置", use_container_width=True):
-        # 重置为默认值
-        defaults = {
-            "bdy_cz_font_name": "宋体",
-            "bdy_font_name": "Times New Roman",
-            "bdy_font_size": 10.5,
-            "bdy_space_before": 6.0,
-            "bdy_space_after": 6.0,
-            "bdy_line_spacing": 1.0,
-            "bdy_first_line_indent": 0.75,
-            "tbl_cz_font_name": "宋体",
-            "tbl_font_name": "Times New Roman",
-            "tbl_font_size": 10.5,
-            "tbl_space_before": 4.0,
-            "tbl_space_after": 4.0,
-            "tbl_line_spacing": 1.0,
-            "tbl_width": 6.0,
-        }
-        # 更新session_state
-        for key, value in defaults.items():
-            st.session_state[key] = value
-        st.success("已重置为默认设置！")
-        st.rerun()
+    
+    col_reset1, col_reset2 = st.columns(2)
+    with col_reset1:
+        if st.button("🔄 重置所有", use_container_width=True, help="重置所有设置为默认值"):
+            # 重置为默认值
+            defaults = {
+                "bdy_cz_font_name": "宋体",
+                "bdy_font_name": "Times New Roman",
+                "bdy_font_size": 10.5,
+                "bdy_space_before": 6.0,
+                "bdy_space_after": 6.0,
+                "bdy_line_spacing": 1.0,
+                "bdy_first_line_indent": 0.75,
+                "tbl_cz_font_name": "宋体",
+                "tbl_font_name": "Times New Roman",
+                "tbl_font_size": 10.5,
+                "tbl_space_before": 4.0,
+                "tbl_space_after": 4.0,
+                "tbl_line_spacing": 1.0,
+                "tbl_width": 6.0,
+                "h1_cz_font": "黑体",
+                "h1_font": "Arial",
+                "h1_size": 14,
+                "h1_bold": True,
+                "h1_before": 12,
+                "h1_after": 12,
+                "h1_line": 1.5,
+                "h1_indent": 0,
+                "h2_cz_font": "黑体",
+                "h2_font": "Arial",
+                "h2_size": 12,
+                "h2_bold": True,
+                "h2_before": 12,
+                "h2_after": 12,
+                "h2_line": 1.5,
+                "h2_indent": 0.75,
+                "h3_cz_font": "宋体",
+                "h3_font": "Times New Roman",
+                "h3_size": 10.5,
+                "h3_bold": False,
+                "h3_before": 8,
+                "h3_after": 8,
+                "h3_line": 1.0,
+                "h3_indent": 1.5,
+                "h4_cz_font": "宋体",
+                "h4_font": "Times New Roman",
+                "h4_size": 10.5,
+                "h4_bold": False,
+                "h4_before": 8,
+                "h4_after": 8,
+                "h4_line": 1.0,
+                "h4_indent": 2.25,
+                "h5_cz_font": "宋体",
+                "h5_font": "Times New Roman",
+                "h5_size": 10.5,
+                "h5_bold": False,
+                "h5_before": 6,
+                "h5_after": 6,
+                "h5_line": 1.0,
+                "h5_indent": 3.0,
+            }
+            for key, value in defaults.items():
+                st.session_state[key] = value
+            st.success("已重置为默认设置！")
+            st.rerun()
 
-# ========== 主页面：文件上传和处理 ==========
+# ========== 主页面：简洁的文件处理界面 ==========
 st.title("📝 Word自动排版工具")
 st.markdown("---")
 
 # 简介
 st.markdown("""
-**功能特点：**
-- 🎯 **智能排版**：自动识别文档结构，添加标题序号
-- 🎨 **灵活设置**：支持1-9级标题样式自定义
-- 📊 **格式统一**：批量设置正文、表格格式
-- ⚡ **批量处理**：支持多文件同时处理
+**快速开始：**
+1. 📌 **设置格式** - 在左侧选择"标题"、"正文"或"表格"选项卡，调整对应格式参数
+2. 📤 **上传文档** - 支持批量上传多个Word文档
+3. 🚀 **开始处理** - 点击下方"开始处理文档"按钮
+4. 📥 **下载结果** - 处理完成后下载排版后的文档
 
-**使用步骤：**
-1. 左侧面板设置排版参数
-2. 上传Word文档（支持多选）
-3. 点击"开始处理"按钮
-4. 下载处理后的文档
+**功能特点：**
+- 🎯 **智能排版**：自动识别文档大纲结构
+- 🔢 **自动编号**：智能添加多级标题序号
+- 🎨 **格式统一**：批量设置文档格式
+- ⚡ **高效处理**：支持多文件同时处理
 """)
 
 # 文件上传区域
-st.markdown("### 📤 上传文档")
+st.markdown("### 📤 文档上传")
 uploaded_files = st.file_uploader(
     "选择Word文档 (.docx)",
     type=["docx"],
     accept_multiple_files=True,
-    help="可以一次上传多个文档进行批量处理"
+    help="支持批量上传多个文档",
+    label_visibility="collapsed"
 )
 
 # 显示已上传文件
 if uploaded_files:
     st.success(f"✅ 已选择 {len(uploaded_files)} 个文档")
     
-    with st.expander("📋 已上传文件列表", expanded=True):
+    # 文件列表
+    with st.expander("📋 文件列表", expanded=True):
         for i, file in enumerate(uploaded_files, 1):
-            col1, col2 = st.columns([3, 1])
+            col1, col2, col3 = st.columns([6, 2, 2])
             with col1:
-                st.write(f"{i}. **{file.name}**")
+                st.write(f"**{file.name}**")
             with col2:
                 st.write(f"`{file.size / 1024:.1f} KB`")
-
-# 处理按钮
-if uploaded_files:
+            with col3:
+                st.write("📄")
+    
+    # 处理按钮
     st.markdown("---")
     
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # 处理选项
+    col1, col2 = st.columns(2)
+    with col1:
+        add_numbers = st.checkbox("添加标题序号", value=True, help="自动为标题添加层级序号")
     with col2:
-        if st.button("🚀 开始处理文档", type="primary", use_container_width=True):
-            # 创建进度条
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            # 从session_state获取当前样式配置
-            style_rules = {}
-            for level in range(1, 10):
-                prefix = f"h{level}_"
-                style_rules[level] = {
-                    'style_name': f'Heading {level}',
-                    'cz_font_name': st.session_state[f"{prefix}cz_font"],
-                    'font_name': st.session_state[f"{prefix}font"],
-                    'font_size': st.session_state[f"{prefix}size"],
-                    'bold': st.session_state[f"{prefix}bold"],
-                    'space_before': st.session_state[f"{prefix}before"],
-                    'space_after': st.session_state[f"{prefix}after"],
-                    'line_spacing': st.session_state[f"{prefix}line"],
-                    'first_line_indent': st.session_state[f"{prefix}indent"],
-                }
-            
-            # 处理每个文件
+        keep_format = st.checkbox("保留原有格式", value=False, help="尽量保留文档原有格式")
+    
+    # 处理按钮
+    if st.button("🚀 开始处理文档", type="primary", use_container_width=True):
+        # 创建进度条
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        # 处理结果区域
+        results_container = st.container()
+        
+        # 从session_state获取当前样式配置
+        style_rules = {}
+        for level in range(1, 10):
+            prefix = f"h{level}_"
+            style_rules[level] = {
+                'style_name': f'Heading {level}',
+                'cz_font_name': st.session_state[f"{prefix}cz_font"],
+                'font_name': st.session_state[f"{prefix}font"],
+                'font_size': st.session_state[f"{prefix}size"],
+                'bold': st.session_state[f"{prefix}bold"],
+                'space_before': st.session_state[f"{prefix}before"],
+                'space_after': st.session_state[f"{prefix}after"],
+                'line_spacing': st.session_state[f"{prefix}line"],
+                'first_line_indent': st.session_state[f"{prefix}indent"],
+            }
+        
+        # 处理每个文件
+        with results_container:
             for idx, uploaded_file in enumerate(uploaded_files):
                 # 更新进度
                 progress = (idx + 1) / len(uploaded_files)
@@ -483,10 +626,13 @@ if uploaded_files:
                         st.session_state
                     )
                     
-                    # 提供下载
-                    with st.container():
+                    # 显示处理结果
+                    col_result1, col_result2, col_result3 = st.columns([6, 3, 1])
+                    with col_result1:
+                        st.write(f"✅ **{uploaded_file.name}**")
+                    with col_result2:
                         st.download_button(
-                            label=f"📥 下载 {uploaded_file.name}",
+                            label="📥 下载文件",
                             data=processed_buffer,
                             file_name=f"排版_{uploaded_file.name}",
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -495,7 +641,7 @@ if uploaded_files:
                         )
                     
                 except Exception as e:
-                    st.error(f"处理 {uploaded_file.name} 时出错: `{str(e)}`")
+                    st.error(f"❌ 处理 {uploaded_file.name} 时出错: `{str(e)}`")
             
             # 完成提示
             progress_bar.empty()
@@ -506,8 +652,6 @@ else:
     st.info("👈 请先在左侧设置参数，然后上传需要排版的Word文档")
 
 # ========== 工具函数定义 ==========
-# 将原来的函数整合到下面
-
 KNOWN_STYLES = {
     "Normal",
     "List Paragraph",
@@ -718,7 +862,6 @@ def process_single_document(file_bytes, style_rules, params):
     buffer.seek(0)
     return buffer
 
-# 运行提示
-if __name__ == "__main__":
-    st.markdown("---")
-    st.caption("© 2024 Word自动排版工具 | 版本 2.0")
+# 页脚
+st.markdown("---")
+st.caption("© 2024 Word自动排版工具 | 专业排版 • 高效便捷")
