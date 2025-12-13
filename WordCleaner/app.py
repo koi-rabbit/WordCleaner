@@ -119,16 +119,30 @@ if 'params_initialized' not in st.session_state:
         "h9_line": 1.0,
         "h9_indent": 0,
         
-        # 编号样式
-        "h1_number_style": "一、",
-        "h2_number_style": "（一）",
-        "h3_number_style": "1.",
-        "h4_number_style": "（1）",
-        "h5_number_style": "①",
-        "h6_number_style": "（①）",
-        "h7_number_style": "a.",
-        "h8_number_style": "（a）",
-        "h9_number_style": "i.",
+        # 编号方案选择
+        "numbering_scheme": "方案一：中文数字",
+        
+        # 方案一：中文数字方案的具体样式
+        "scheme1_h1": "一、",
+        "scheme1_h2": "（一）",
+        "scheme1_h3": "1.",
+        "scheme1_h4": "（1）",
+        "scheme1_h5": "（i）",
+        "scheme1_h6": "（a）",
+        "scheme1_h7": "（一）",
+        "scheme1_h8": "（1）",
+        "scheme1_h9": "（i）",
+        
+        # 方案二：数字点号方案的具体样式
+        "scheme2_h1": "1.",
+        "scheme2_h2": "1.1",
+        "scheme2_h3": "1.1.1",
+        "scheme2_h4": "1.1.1.1",
+        "scheme2_h5": "1.1.1.1.1",
+        "scheme2_h6": "1.1.1.1.1.1",
+        "scheme2_h7": "1.1.1.1.1.1.1",
+        "scheme2_h8": "1.1.1.1.1.1.1.1",
+        "scheme2_h9": "1.1.1.1.1.1.1.1.1",
     }
     
     st.session_state.update(defaults)
@@ -153,15 +167,29 @@ with st.sidebar:
         level_num = int(heading_level[0])
         prefix = f"h{level_num}_"
         
-        # 编号样式设置
+        # 编号方案选择
         st.selectbox(
-            "选择编号样式",
-            options=["一、", "1.", "（一）", "（1）", "①", "（①）", "a.", "（a）", "i."],
-            key=f"{prefix}number_style_select",
-            index=["一、", "1.", "（一）", "（1）", "①", "（①）", "a.", "（a）", "i."].index(st.session_state[f"{prefix}number_style"]),
-            on_change=lambda: st.session_state.update({f"{prefix}number_style": st.session_state[f"{prefix}number_style_select"]})
+            "选择编号方案",
+            options=["方案一：中文数字", "方案二：数字点号"],
+            key="numbering_scheme_select",
+            index=0 if st.session_state["numbering_scheme"] == "方案一：中文数字" else 1,
+            on_change=lambda: st.session_state.update({"numbering_scheme": st.session_state["numbering_scheme_select"]})
         )
-       
+        
+        # 根据选择的方案显示对应级别的编号样式
+        scheme_num = 1 if st.session_state["numbering_scheme"] == "方案一：中文数字" else 2
+        scheme_prefix = f"scheme{scheme_num}_h{level_num}"
+        
+        # 显示当前级别的编号样式（只读）
+        st.text_input(
+            "当前编号样式",
+            value=st.session_state[scheme_prefix],
+            disabled=True,
+            key=f"number_style_display_{level_num}"
+        )
+        
+        st.markdown("---")
+        
         # 字体设置
         col1, col2 = st.columns(2)
         with col1:
@@ -179,7 +207,7 @@ with st.sidebar:
                 key=f"{prefix}font_select"
             )
         
-        # 字体大小和粗体设置（粗体改为下拉选择）
+        # 字体大小和粗体设置
         col_size, col_bold = st.columns(2)
         with col_size:
             st.session_state[f"{prefix}size"] = st.number_input(
@@ -257,7 +285,6 @@ with st.sidebar:
                 f"{prefix}after": defaults[f"{prefix}after"],
                 f"{prefix}line": defaults[f"{prefix}line"],
                 f"{prefix}indent": defaults[f"{prefix}indent"],
-                f"{prefix}number_style": defaults[f"{prefix}number_style"],
             }
             for key, value in reset_keys.items():
                 st.session_state[key] = value
@@ -509,7 +536,6 @@ if uploaded_files:
         
         # 从session_state获取当前样式配置
         style_rules = {}
-        number_styles = {}
         for level in range(1, 10):
             prefix = f"h{level}_"
             style_rules[level] = {
@@ -523,7 +549,9 @@ if uploaded_files:
                 'line_spacing': st.session_state[f"{prefix}line"],
                 'first_line_indent': st.session_state[f"{prefix}indent"],
             }
-            number_styles[level] = st.session_state[f"{prefix}number_style"]
+        
+        # 获取编号方案
+        numbering_scheme = st.session_state["numbering_scheme"]
         
         # 处理每个文件
         with results_container:
@@ -538,7 +566,7 @@ if uploaded_files:
                     processed_buffer = process_single_document(
                         uploaded_file.read(),
                         style_rules,
-                        number_styles,
+                        numbering_scheme,
                         st.session_state,
                         add_numbers
                     )
@@ -630,7 +658,41 @@ def set_font(run, cz_font_name, font_name):
     rFonts.set(qn('w:eastAsia'), cz_font_name)
     rFonts.set(qn('w:ascii'), font_name)
 
-def add_heading_numbers_custom(doc, number_styles, add_numbers=True):
+def number_to_chinese(number):
+    """数字转中文大写数字"""
+    chinese_numbers = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+    
+    if number <= 10:
+        return chinese_numbers[number]
+    elif number < 20:
+        return "十" + (chinese_numbers[number - 10] if number != 10 else "")
+    elif number < 100:
+        tens = number // 10
+        ones = number % 10
+        if ones == 0:
+            return chinese_numbers[tens] + "十"
+        else:
+            return chinese_numbers[tens] + "十" + chinese_numbers[ones]
+    else:
+        return str(number)
+
+def number_to_roman(num):
+    """将数字转换为罗马数字（1-20）"""
+    roman_numerals = {
+        1: 'i', 2: 'ii', 3: 'iii', 4: 'iv', 5: 'v',
+        6: 'vi', 7: 'vii', 8: 'viii', 9: 'ix', 10: 'x',
+        11: 'xi', 12: 'xii', 13: 'xiii', 14: 'xiv', 15: 'xv',
+        16: 'xvi', 17: 'xvii', 18: 'xviii', 19: 'xix', 20: 'xx'
+    }
+    return roman_numerals.get(num, str(num))
+
+def number_to_letter(num):
+    """将数字转换为字母（1-26）"""
+    if 1 <= num <= 26:
+        return chr(96 + num)  # a-z
+    return str(num)
+
+def add_heading_numbers_custom(doc, numbering_scheme, add_numbers=True):
     """添加自定义标题序号"""
     if not add_numbers:
         return
@@ -638,9 +700,9 @@ def add_heading_numbers_custom(doc, number_styles, add_numbers=True):
     number_pattern = re.compile(
         r'^\s*'
         r'[（(]?'
-        r'[\d一二三四五六七八九十零①②③④⑤⑥⑦⑧⑨⑩]{1,3}'
+        r'[\d一二三四五六七八九十零①②③④⑤⑥⑦⑧⑨⑩]{1,4}'
         r'[\.、）)\s]'
-        r'(?:[\d一二三四五六七八九十零①②③④⑤⑥⑦⑧⑨⑩]{1,3}'
+        r'(?:[\d一二三四五六七八九十零①②③④⑤⑥⑦⑧⑨⑩]{1,4}'
         r'[\.、）)\s]'
         r')*',
         re.UNICODE
@@ -670,45 +732,54 @@ def add_heading_numbers_custom(doc, number_styles, add_numbers=True):
             
             # 添加序号
             if heading_numbers[level] > 0:
-                number_style = number_styles.get(level + 1, "")
-                if number_style:
-                    # 根据样式类型格式化序号
-                    if "一" in number_style:
-                        # 中文数字序号
-                        chinese_numbers = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
-                        if heading_numbers[level] <= 10:
-                            number = chinese_numbers[heading_numbers[level] - 1]
-                        else:
-                            number = str(heading_numbers[level])
-                    elif "①" in number_style:
-                        # 圆圈数字序号
-                        circled_nums = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
-                        if heading_numbers[level] <= 10:
-                            number = circled_nums[heading_numbers[level] - 1]
-                        else:
-                            number = str(heading_numbers[level])
-                    elif "a" in number_style.lower():
-                        # 字母序号
-                        if heading_numbers[level] <= 26:
-                            number = chr(96 + heading_numbers[level])  # a-z
-                        else:
-                            number = str(heading_numbers[level])
-                    elif "i" in number_style.lower():
-                        # 罗马数字序号（简单实现）
-                        roman_nums = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"]
-                        if heading_numbers[level] <= 10:
-                            number = roman_nums[heading_numbers[level] - 1]
-                        else:
-                            number = str(heading_numbers[level])
-                    else:
-                        # 阿拉伯数字序号
-                        number = str(heading_numbers[level])
-                    
-                    # 构建序号字符串
-                    number_str = number_style.replace("一", number).replace("1", number).replace("①", number).replace("a", number).replace("i", number)
-                    paragraph.text = number_str + paragraph.text
+                if numbering_scheme == "方案一：中文数字":
+                    # 方案一：中文数字方案
+                    number_str = get_scheme1_number(level + 1, heading_numbers)
+                else:
+                    # 方案二：数字点号方案
+                    number_str = get_scheme2_number(level + 1, heading_numbers)
+                
+                paragraph.text = number_str + paragraph.text
 
-def process_single_document(file_bytes, style_rules, number_styles, params, add_numbers=True):
+def get_scheme1_number(level, heading_numbers):
+    """获取方案一的编号"""
+    if level == 1:
+        # 一、
+        return number_to_chinese(heading_numbers[0]) + "、"
+    elif level == 2:
+        # （一）
+        return "（" + number_to_chinese(heading_numbers[1]) + "）"
+    elif level == 3:
+        # 1.
+        return str(heading_numbers[2]) + "."
+    elif level == 4:
+        # （1）
+        return "（" + str(heading_numbers[3]) + "）"
+    elif level == 5:
+        # （i）
+        return "（" + number_to_roman(heading_numbers[4]) + "）"
+    elif level == 6:
+        # （a）
+        return "（" + number_to_letter(heading_numbers[5]) + "）"
+    elif level == 7:
+        # （一）
+        return "（" + number_to_chinese(heading_numbers[6]) + "）"
+    elif level == 8:
+        # （1）
+        return "（" + str(heading_numbers[7]) + "）"
+    elif level == 9:
+        # （i）
+        return "（" + number_to_roman(heading_numbers[8]) + "）"
+    return str(heading_numbers[level-1]) + "."
+
+def get_scheme2_number(level, heading_numbers):
+    """获取方案二的编号（1.1.1格式）"""
+    # 只取当前级别及以上的数字
+    numbers = heading_numbers[:level]
+    # 连接成 1.1.1 格式
+    return '.'.join(str(num) for num in numbers if num > 0) + "."
+
+def process_single_document(file_bytes, style_rules, numbering_scheme, params, add_numbers=True):
     """处理单个文档"""
     doc = Document(BytesIO(file_bytes))
     
@@ -719,7 +790,7 @@ def process_single_document(file_bytes, style_rules, number_styles, params, add_
     kill_all_numbering(doc)
     
     # 添加标题序号
-    add_heading_numbers_custom(doc, number_styles, add_numbers)
+    add_heading_numbers_custom(doc, numbering_scheme, add_numbers)
     
     # 应用格式
     skipped = set()
@@ -774,13 +845,3 @@ def process_single_document(file_bytes, style_rules, number_styles, params, add_
     if skipped:
         st.warning(f"跳过样式: {', '.join(sorted(skipped))}")
     
-    # 保存到buffer
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer
-
-# 页脚
-st.markdown("---")
-st.caption("© 2024 Word自动排版工具 | 专业排版 • 高效便捷")
-
