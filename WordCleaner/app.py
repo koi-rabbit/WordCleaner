@@ -1,11 +1,10 @@
-# app.py
-import streamlit as st
-from docx import Document
 import re, os
 from io import BytesIO
+from docx import Document
 from docx.shared import Pt, Inches
 from docx.oxml.ns import qn
 from docx.shared import Cm
+import streamlit as st
 
 # 页面配置
 st.set_page_config(
@@ -651,39 +650,33 @@ def set_font(run, cz_font_name, font_name):
     rFonts.set(qn('w:eastAsia'), cz_font_name)
     rFonts.set(qn('w:ascii'), font_name)
 
-def number_to_chinese(number):
+def num_to_cn(num):
     """数字转中文大写数字"""
-    chinese_numbers = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+    cn_nums = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
     
-    if number <= 10:
-        return chinese_numbers[number]
-    elif number < 20:
-        return "十" + (chinese_numbers[number - 10] if number != 10 else "")
-    elif number < 100:
-        tens = number // 10
-        ones = number % 10
+    if num <= 10:
+        return cn_nums[num]
+    elif num < 20:
+        return "十" + (cn_nums[num - 10] if num != 10 else "")
+    elif num < 100:
+        tens = num // 10
+        ones = num % 10
         if ones == 0:
-            return chinese_numbers[tens] + "十"
+            return cn_nums[tens] + "十"
         else:
-            return chinese_numbers[tens] + "十" + chinese_numbers[ones]
+            return cn_nums[tens] + "十" + cn_nums[ones]
     else:
-        return str(number)
+        return str(num)
 
-def number_to_roman(num):
+def num_to_rom(num):
     """将数字转换为罗马数字（1-20）"""
-    roman_numerals = {
+    rom_nums = {
         1: 'i', 2: 'ii', 3: 'iii', 4: 'iv', 5: 'v',
         6: 'vi', 7: 'vii', 8: 'viii', 9: 'ix', 10: 'x',
         11: 'xi', 12: 'xii', 13: 'xiii', 14: 'xiv', 15: 'xv',
         16: 'xvi', 17: 'xvii', 18: 'xviii', 19: 'xix', 20: 'xx'
     }
-    return roman_numerals.get(num, str(num))
-
-def number_to_letter(num):
-    """将数字转换为字母（1-26）"""
-    if 1 <= num <= 26:
-        return chr(96 + num)  # a-z
-    return str(num)
+    return rom_nums.get(num, str(num))
 
 def add_heading_numbers_custom(doc, numbering_scheme, add_numbers=True):
     """添加自定义标题序号"""
@@ -735,13 +728,12 @@ def add_heading_numbers_custom(doc, numbering_scheme, add_numbers=True):
                 paragraph.text = number_str + paragraph.text
 
 def get_scheme1_number(level, heading_numbers):
-    """获取方案一的编号"""
     if level == 1:
         # 一、
-        return number_to_chinese(heading_numbers[0]) + "、"
+        return num_to_cn(heading_numbers[0]) + "、"
     elif level == 2:
         # （一）
-        return "（" + number_to_chinese(heading_numbers[1]) + "）"
+        return "（" + num_to_cn(heading_numbers[1]) + "）"
     elif level == 3:
         # 1.
         return str(heading_numbers[2]) + "."
@@ -750,27 +742,7 @@ def get_scheme1_number(level, heading_numbers):
         return "（" + str(heading_numbers[3]) + "）"
     elif level == 5:
         # （i）
-        return "（" + number_to_roman(heading_numbers[4]) + "）"
-    elif level == 6:
-        # （a）
-        return "（" + number_to_letter(heading_numbers[5]) + "）"
-    elif level == 7:
-        # （一）
-        return "（" + number_to_chinese(heading_numbers[6]) + "）"
-    elif level == 8:
-        # （1）
-        return "（" + str(heading_numbers[7]) + "）"
-    elif level == 9:
-        # （i）
-        return "（" + number_to_roman(heading_numbers[8]) + "）"
     return str(heading_numbers[level-1]) + "."
-
-def get_scheme2_number(level, heading_numbers):
-    """获取方案二的编号（1.1.1格式）"""
-    # 只取当前级别及以上的数字
-    numbers = heading_numbers[:level]
-    # 连接成 1.1.1 格式
-    return '.'.join(str(num) for num in numbers if num > 0) + "."
 
 def process_single_document(file_bytes, style_rules, numbering_scheme, params, add_numbers=True):
     """处理单个文档"""
@@ -847,3 +819,4 @@ def process_single_document(file_bytes, style_rules, numbering_scheme, params, a
 # 页脚
 st.markdown("---")
 st.caption("© 2024 Word自动排版工具 | 专业排版 • 高效便捷")
+
