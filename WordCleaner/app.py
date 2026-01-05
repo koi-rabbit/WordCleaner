@@ -82,42 +82,6 @@ if 'params_initialized' not in st.session_state:
         "h5_line": 1.0,
         "h5_indent": 3.0,
         
-        "h6_cz_font": "宋体",
-        "h6_font": "Arial",
-        "h6_size": 9,
-        "h6_bold": False,
-        "h6_before": 2,
-        "h6_after": 2,
-        "h6_line": 1.0,
-        "h6_indent": 0,
-        
-        "h7_cz_font": "宋体",
-        "h7_font": "Arial",
-        "h7_size": 8,
-        "h7_bold": False,
-        "h7_before": 0,
-        "h7_after": 0,
-        "h7_line": 1.0,
-        "h7_indent": 0,
-        
-        "h8_cz_font": "宋体",
-        "h8_font": "Arial",
-        "h8_size": 7,
-        "h8_bold": False,
-        "h8_before": 0,
-        "h8_after": 0,
-        "h8_line": 1.0,
-        "h8_indent": 0,
-        
-        "h9_cz_font": "宋体",
-        "h9_font": "Arial",
-        "h9_size": 6,
-        "h9_bold": False,
-        "h9_before": 0,
-        "h9_after": 0,
-        "h9_line": 1.0,
-        "h9_indent": 0,
-        
         # 编号方案选择
         "numbering_scheme": "方案一：中文数字",
     }
@@ -819,4 +783,5 @@ def process_single_document(file_bytes, style_rules, numbering_scheme, params, a
 # 页脚
 st.markdown("---")
 st.caption("© 2024 Word自动排版工具 | 专业排版 • 高效便捷")
+
 
